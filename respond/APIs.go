@@ -2,7 +2,7 @@ package respond
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -15,8 +15,6 @@ func GetLabelsByTaskId(collection *mongo.Collection, w http.ResponseWriter, r *h
 	queryModel := models.Label{TaskId: "taskId6a458bc6800048a7"}
 	var labelResult []models.Label
 	cur, err := collection.Find(context.Background(), queryModel.ToQueryBson())
-	log.Println("queryModel!", queryModel.ToQueryBson())
-	log.Println("cur!", cur)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,8 +27,9 @@ func GetLabelsByTaskId(collection *mongo.Collection, w http.ResponseWriter, r *h
 			log.Fatal(err)
 		}
 		labelResult = append(labelResult, result)
-		fmt.Println(result)
 	}
+	jsondata, _ := json.Marshal(labelResult)
+	w.Write(jsondata)
 	if err := cur.Err(); err != nil {
 		return err
 	}

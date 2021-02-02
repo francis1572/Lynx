@@ -1,15 +1,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/Lynx/db"
-	"github.com/Lynx/respond"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -32,28 +28,25 @@ func sayhelloName(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello astaxie!") //這個寫入到 w 的是輸出到客戶端的
 }
 
-type MyMux struct {
-}
+// type RouteMux struct {
+// }
 
-func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/" {
-		sayhelloName(w, r)
-		return
-	}
-	if r.URL.Path == "/labels" {
-		respond.GetLabelsByTaskId(collection, w, r)
-		return
-	}
-	http.NotFound(w, r)
-	return
-}
+// func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// 	if r.URL.Path == "/" {
+// 		sayhelloName(w, r)
+// 		return
+// 	}
+// 	if r.URL.Path == "/labels" {
+// 		respond.GetLabelsByTaskId(collection, w, r)
+// 		return
+// 	}
+// 	http.NotFound(w, r)
+// 	return
+// }
 
 func main() {
-	// fmt.Println(client)
 	database = client.Database("LINE_LABEL")
 	collection = database.Collection("Label")
-	cur, _ := collection.Find(context.Background(), bson.M{})
-	log.Println("cur!", cur)
-	mux := &MyMux{}
+	mux := &RouteMux{}
 	http.ListenAndServe(":9090", mux)
 }

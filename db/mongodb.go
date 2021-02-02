@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,18 +14,17 @@ var client *mongo.Client
 
 func DBConnection() {
 	var err error
-	clientOptions := options.Client().ApplyURI("mongodb+srv://angela:angyeah6@cluster0.gxqmm.mongodb.net/LINE_LABEL?retryWrites=true&w=majority")
-	client, err = mongo.Connect(context.TODO(), clientOptions)
+	client, err = mongo.NewClient(options.Client().ApplyURI("mongodb+srv://angela:angyeah6@cluster0.gxqmm.mongodb.net/LINE_LABEL?retryWrites=true&w=majority"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	// ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	// err = client.Connect(ctx)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer client.Disconnect(context.TODO())
-	err = client.Ping(context.TODO(), readpref.Primary())
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	err = client.Connect(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// defer client.Disconnect(ctx)
+	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		log.Fatal(err)
 	}
