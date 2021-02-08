@@ -35,6 +35,13 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		respond.GetTaskByTaskId(collection, w, r)
 		return
 	case "/articles":
+		respond.GetArticles(database, w, r)
+		return
+	case "/saveArticles":
+		respond.SaveArticles(database, w, r)
+		return
+	case "/testArticles":
+		respond.TestArticles(database, w, r)
 		return
 	default:
 		break
