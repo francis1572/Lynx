@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Lynx/respond"
+	respond "github.com/Lynx/controller"
 )
 
 type RouteMux struct {
@@ -31,17 +31,14 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/":
 		sayhelloName(w, r)
 		return
-	case "/getTask":
-		respond.GetTaskByTaskId(collection, w, r)
-		return
 	case "/articles":
-		respond.GetArticles(database, w, r)
+		respond.GetArticles(Database, w, r)
 		return
 	case "/saveArticles":
-		respond.SaveArticles(database, w, r)
+		respond.SaveArticles(Database, w, r)
 		return
-	case "/testArticles":
-		respond.TestArticles(database, w, r)
+	case "/tasks":
+		respond.GetTasksByArticleId(Database, w, r)
 		return
 	default:
 		break

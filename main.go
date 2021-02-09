@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Lynx/db"
@@ -8,14 +9,13 @@ import (
 )
 
 var (
-	client     = db.GetDBCli()
-	database   *mongo.Database
-	collection *mongo.Collection
+	client   = db.GetDBCli()
+	Database *mongo.Database
 )
 
 func main() {
-	database = client.Database("LINE_LABEL")
-	collection = database.Collection("Label")
+	Database = client.Database("LINE_LABEL")
 	mux := &RouteMux{}
+	log.Println("Server Launched on port 9090")
 	http.ListenAndServe(":9090", mux)
 }
