@@ -14,10 +14,11 @@ import (
 )
 
 func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var queryInfo interface{}
+	var queryInfo map[string]string
 	var articles []models.Article
 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
-	log.Println(queryInfo)
+	var userId = queryInfo["userId"]
+	log.Println(userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -26,6 +27,24 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
+	}
+	for i, article := range articles {
+		// get how many tasks that each article has
+		tasks, err := service.GetTasksByArticleId(database, article.ToQueryBson())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+		articles[i].TotalTasks = len(tasks)
+		for _, task := range tasks {
+			answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: userId, TaskId: task.TaskId})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return err
+			}
+			// get how many tasks user has answered
+			articles[i].TotalAnswered = len(answers)
+		}
 	}
 	jsondata, _ := json.Marshal(articles)
 	w.Write(jsondata)
