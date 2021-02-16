@@ -2,6 +2,9 @@
 Label Lab system Back-end api via go lang
 
 ## Before Started
+### Most important
+1. Please create your own branch for your features. If you want to merge your codes into `main` branch, please create a new pull request and contact project owner or other team members to review your codes.
+2. If you need dramatic refactoring, please discuss with code owners.
 ### For Mac users
 1. Make sure you have golang installed:
       * Install through homebrew: `brew install golang`
@@ -37,7 +40,7 @@ Label Lab system Back-end api via go lang
       * <b>Step 6</b>: Run this project, use `go run .`
       * <b>Step 7</b>: To check whether server is successfully running, you can try: `$ curl -X GET 'http://127.0.0.1:9090'` in a new terminal window.
       * [Ref](https://sourabhbajaj.com/mac-setup/Go/README.html)
-3. Some file/directory note:
+3. Some file/directory notes:
       * `main.go`: main function that run this server.
       * `route.go`: routes of restful api can be found here.
       * `/controller`: controller of apis.
