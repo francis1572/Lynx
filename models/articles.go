@@ -6,10 +6,10 @@ import (
 
 //User structure
 type Article struct {
-	ArticleId     string `bson:"articleId" json:"articleId"`
-	ArticleTitle  string `bson:"articleTitle" json:"articleTitle"`
-	TotalTasks    int    `bson:"totalTasks" json:"totalTasks"`
-	TotalAnswered int    `bson:"totalAnswered" json:"totalAnswered"`
+	ArticleId    string `bson:"articleId" json:"articleId"`
+	ArticleTitle string `bson:"articleTitle" json:"articleTitle"`
+	TotalTasks   int    `bson:"totalTasks" json:"totalTasks"`
+	Answered     int    `bson:"answered" json:"answered"`
 }
 
 //TableName return name of database table

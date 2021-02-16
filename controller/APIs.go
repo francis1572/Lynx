@@ -43,7 +43,7 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 				return err
 			}
 			// get how many tasks user has answered
-			articles[i].TotalAnswered = len(answers)
+			articles[i].Answered = len(answers)
 		}
 	}
 	jsondata, _ := json.Marshal(articles)
@@ -128,6 +128,19 @@ func SaveArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reque
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	log.Printf("Inserted %v documents into articles collection!\n", len(articleResult.InsertedIDs))
+	jsondata, _ := json.Marshal(models.InsertSuccess)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func Test(w http.ResponseWriter, r *http.Request) error {
+	var requestModel []interface{}
+	err := json.NewDecoder(r.Body).Decode(&requestModel)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println(requestModel)
 	jsondata, _ := json.Marshal(models.InsertSuccess)
 	_, _ = w.Write(jsondata)
 	return nil
