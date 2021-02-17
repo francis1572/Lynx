@@ -40,7 +40,7 @@ Label Lab system Back-end api via go lang
       * <b>Step 6</b>: Run this project, use `go run .`
       * <b>Step 7</b>: To check whether server is successfully running, you can try: `$ curl -X GET 'http://127.0.0.1:9090'` in a new terminal window.
       * [Ref](https://sourabhbajaj.com/mac-setup/Go/README.html)
-3. Some file/directory notes:
+4. Some file/directory notes:
       * `main.go`: main function that run this server.
       * `route.go`: routes of restful api can be found here.
       * `/controller`: controller of apis.
@@ -51,8 +51,9 @@ Label Lab system Back-end api via go lang
 
 ## Execute
 
-To run the server, you can use
+* To run the server, you can use
 ```go run .```
+* If you need live-reload, install `gin`: `$ go get github.com/codegangsta/gin`. Then run this repo by: `$ gin -i run .`. [Ref](https://github.com/codegangsta/gin)
 
 ## Tutorial Recommandation
 
