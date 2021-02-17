@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/Lynx/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -79,6 +80,29 @@ func GetAnswers(db *mongo.Database, task models.MRCAnswer) ([]models.MRCAnswer, 
 		}
 		answers = append(answers, result)
 	}
-	log.Println("answers", answers)
 	return answers, nil
+}
+
+func GetTaskById(db *mongo.Database, taskModel models.MRCTask) (*models.MRCTask, error) {
+	TaskCollection := db.Collection("MRCTask")
+	var task models.MRCTask
+	result := TaskCollection.FindOne(context.Background(), taskModel.ToQueryBson())
+	err := result.Decode(&task)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	return &task, nil
+}
+
+func SaveAnswer(db *mongo.Database, answer models.MRCAnswer) (*mongo.InsertOneResult, error) {
+	AnswerCollection := db.Collection("MRCAnswer")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := AnswerCollection.InsertOne(ctx, answer)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	return res, nil
 }

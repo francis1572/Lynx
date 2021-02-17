@@ -1,9 +1,10 @@
 package main
 
 import (
+	"log"
 	"fmt"
+	"encoding/json"
 	"net/http"
-	"strings"
 
 	respond "github.com/Lynx/controller"
 )
@@ -12,17 +13,16 @@ type RouteMux struct {
 }
 
 // example
-func sayhelloName(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()       //解析參數，預設是不會解析的
-	fmt.Println(r.Form) //這些資訊是輸出到伺服器端的列印資訊
-	fmt.Println("path", r.URL.Path)
-	fmt.Println("scheme", r.URL.Scheme)
-	fmt.Println(r.Form["url_long"])
-	for k, v := range r.Form {
-		fmt.Println("key:", k)
-		fmt.Println("val:", strings.Join(v, ""))
+func sayhelloName(w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
 	}
-	fmt.Fprintf(w, "Hello!") //這個寫入到 w 的是輸出到客戶端的
+	fmt.Println("query info:", queryInfo)
+	fmt.Fprintf(w, queryInfo["data"])
+	return nil
 }
 
 func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -39,6 +39,14 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case "/tasks":
 		respond.GetTasksByArticleId(Database, w, r)
+		return
+	case "/getTask":
+		log.Println("POST /getTask")
+		respond.GetTaskById(Database, w, r)
+		return
+	case "/saveAnswer":
+		log.Println("POST /SaveAnswer")
+		respond.SaveAnswer(Database, w, r)
 		return
 	case "/test":
 		respond.Test(w, r)
