@@ -63,9 +63,9 @@ func GetTasksByArticleId(db *mongo.Database, queryBson bson.M) ([]models.MRCTask
 	return tasks, nil
 }
 
-func GetAnswers(db *mongo.Database, task models.MRCAnswer) ([]models.MRCAnswer, error) {
+func GetAnswers(db *mongo.Database, task models.MRCAnswer) ([]*models.MRCAnswer, error) {
 	AnswerCollection := db.Collection("MRCAnswer")
-	var answers []models.MRCAnswer
+	var answers []*models.MRCAnswer
 	cur, err := AnswerCollection.Find(context.Background(), task.ToQueryBson())
 	if err != nil {
 		log.Fatal(err)
@@ -78,7 +78,7 @@ func GetAnswers(db *mongo.Database, task models.MRCAnswer) ([]models.MRCAnswer, 
 			log.Fatal(err)
 			return nil, err
 		}
-		answers = append(answers, result)
+		answers = append(answers, &result)
 	}
 	return answers, nil
 }

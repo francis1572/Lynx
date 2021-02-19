@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Lynx/models"
+	"github.com/Lynx/viewModels"
 	"github.com/Lynx/service"
 	uuid "github.com/nu7hatch/gouuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -57,7 +58,7 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 	// [TODO]: Change userId to real Login user
 	var userId = "tester01"
 	var queryTask models.MRCTask
-	var result models.TasksViewModel
+	var result viewModels.TasksViewModel
 	// decode request condition to queryTask
 	err := json.NewDecoder(r.Body).Decode(&queryTask)
 	if err != nil {
@@ -84,7 +85,7 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 
 	// get tasksInfo
 	for _, task := range tasks {
-		var t = models.TaskListModel{
+		var t = viewModels.TaskListModel{
 			TaskId:   task.TaskId,
 			Context:  task.Context,
 			Answered: task.Answered,
@@ -150,7 +151,7 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	var response models.TaskViewModel
+	var response viewModels.TaskViewModel
 	response.TaskId = task.TaskId
 	response.TaskType = task.TaskType
 	response.TaskTitle = task.TaskTitle
@@ -158,7 +159,7 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	response.Context = task.Context
 
 	for _, answer := range answers {
-		var QAPair = models.QAPairModel {
+		var QAPair = viewModels.QAPairModel {
 			Question: answer.Question,
 			Answer: answer.Answer,
 		}
