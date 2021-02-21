@@ -43,8 +43,8 @@ Label Lab system Back-end api via go lang
 4. Some file/directory notes:
       * `main.go`: main function that run this server.
       * `route.go`: routes of restful api can be found here.
-      * `/controller`: controller of apis.
-      * `/service`: functions or methods that controller called.
+      * `/controller`: main logics here.
+      * `/service`: connect to db and do CRUDs.
       * `/models`: db schemas
       * `/db`: deal with mongodb connection.
       * others: are not important.
