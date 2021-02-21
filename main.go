@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Lynx/db"
+	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -17,5 +18,6 @@ func main() {
 	Database = client.Database("LINE_LABEL")
 	mux := &RouteMux{}
 	log.Println("Server Launched on port 9090")
-	http.ListenAndServe(":9090", mux)
+	handler := cors.Default().Handler(mux)
+	http.ListenAndServe(":9090", handler)
 }

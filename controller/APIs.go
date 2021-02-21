@@ -48,7 +48,6 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		}
 	}
 	jsondata, _ := json.Marshal(articles)
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsondata)
 	return nil
 }
@@ -101,7 +100,6 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 		result.TaskList = append(result.TaskList, t)
 	}
 	jsondata, _ := json.Marshal(result)
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsondata)
 	return nil
 }
@@ -132,7 +130,6 @@ func SaveArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reque
 	}
 	log.Printf("Inserted %v documents into articles collection!\n", len(articleResult.InsertedIDs))
 	jsondata, _ := json.Marshal(models.InsertSuccess)
-	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(jsondata)
 	return nil
 }
@@ -158,15 +155,14 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	response.Context = task.Context
 
 	for _, answer := range answers {
-		var QAPair = models.QAPairModel {
+		var QAPair = models.QAPairModel{
 			Question: answer.Question,
-			Answer: answer.Answer,
+			Answer:   answer.Answer,
 		}
 		response.QAPairs = append(response.QAPairs, QAPair)
 	}
 
 	jsondata, _ := json.Marshal(response)
-	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(jsondata)
 	return nil
 }
@@ -183,12 +179,11 @@ func SaveAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	var response = models.Success {
+	var response = models.Success{
 		Success: true,
 		Message: res.InsertedID.(primitive.ObjectID).Hex(),
 	}
 	jsondata, _ := json.Marshal(response)
-	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(jsondata)
 	return nil
 }
@@ -202,7 +197,6 @@ func Test(w http.ResponseWriter, r *http.Request) error {
 	}
 	log.Println(requestModel)
 	jsondata, _ := json.Marshal(models.InsertSuccess)
-	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(jsondata)
 	return nil
 }

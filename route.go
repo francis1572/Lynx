@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 
 	respond "github.com/Lynx/controller"
@@ -27,6 +27,7 @@ func sayhelloName(w http.ResponseWriter, r *http.Request) error {
 
 func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
+	w.Header().Set("Content-Type", "application/json")
 	switch path {
 	case "/":
 		sayhelloName(w, r)
