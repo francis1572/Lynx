@@ -55,6 +55,12 @@ Label Lab system Back-end api via go lang
 ```go run .```
 * If you need live-reload, install `gin`: `$ go get github.com/codegangsta/gin`. Then run this repo by: `$ gin -i run .`. [Ref](https://github.com/codegangsta/gin)
 
+## Connect to Linux Server (temp)
+To check the error log or CI/CD process.
+* make ssh connection: `ssh frank@140.112.107.121` and enter the password.
+* attach to tmux session: `tmux attach -t golang_server`
+* if Server is shutdown, run: `bash server.sh` to re-run the server.
+
 ## Tutorial Recommandation
 
 * [**Basic GO Lang**](https://michaelchen.tech/golang-programming/write-first-program/)
