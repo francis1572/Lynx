@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	respond "github.com/Lynx/controller"
+	respond "Lynx/controller"
 )
 
 type RouteMux struct {

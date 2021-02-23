@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Lynx/models"
-	"github.com/Lynx/service"
-	"github.com/Lynx/viewModels"
+	"Lynx/models"
+	"Lynx/service"
+	"Lynx/viewModels"
 	uuid "github.com/nu7hatch/gouuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

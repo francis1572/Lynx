@@ -49,6 +49,15 @@ Label Lab system Back-end api via go lang
       * `/db`: deal with mongodb connection.
       * others: are not important.
 
+## Docker access method
+1. make sure you have docker installed.
+2. After cloning this repo, use the following commands (in this project directory) to run the server:<br>
+      ```
+      $ docker build -t 'bilab-backend' .
+      $ docker run -p 9090:9090 bilab-backend
+      ```
+3. Access api with: `http://localhost:9090/articles`
+
 ## Execute
 
 * To run the server, you can use
