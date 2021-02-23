@@ -70,7 +70,6 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	log.Println("tasks", tasks)
 
 	// get ArticleInfo
 	result.ArticleId = queryTask.ArticleId
@@ -142,8 +141,8 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: requestBody["userId"], TaskId: requestBody["taskId"]})
-	task, err := service.GetTaskById(database, models.MRCTask{TaskId: requestBody["taskId"]})
+	answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: requestBody["userId"], ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
+	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
