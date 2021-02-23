@@ -52,7 +52,10 @@ Label Lab system Back-end api via go lang
 ## Execute
 
 * To run the server, you can use
-```go run .```
+```
+go mod download
+go run .
+```
 * If you need live-reload, install `gin`: `$ go get github.com/codegangsta/gin`. Then run this repo by: `$ gin -i run .`. [Ref](https://github.com/codegangsta/gin)
 
 ## Connect to Linux Server (temp)
