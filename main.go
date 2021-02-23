@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Lynx/db"
+	"Lynx/db"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 )
