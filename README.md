@@ -36,8 +36,8 @@ Label Lab system Back-end api via go lang
       * <b>Step 3</b>: Create go workspace by command:<br>
       `$ mkdir -p $GOPATH $GOPATH/src $GOPATH/pkg $GOPATH/bin`
       * <b>Step 4</b>: Clone or create your Go projects in `$GOPATH/src`. Since this repo have absolute directory `github.com/...`, your have to create a directory named `github.com` in `$GOPATH/src`, and then clone this repo in `github.com`.
-      * <b>Step 5</b>: Install packages. You can use `$ go install` command to check which packages you should install before run the project. And use `$ go get [packages routes]` to install the packeages.
-      * <b>Step 6</b>: Run this project, use `go run .`
+      * <b>Step 5</b>: Install packages. You can use `$ go mod download`.
+      * <b>Step 6</b>: Run this project, use `go run .` or `gin -i run .`
       * <b>Step 7</b>: To check whether server is successfully running, you can try: `$ curl -X GET 'http://127.0.0.1:9090'` in a new terminal window.
       * [Ref](https://sourabhbajaj.com/mac-setup/Go/README.html)
 4. Some file/directory notes:
