@@ -9,11 +9,48 @@ import (
 	"Lynx/models"
 	"Lynx/service"
 	"Lynx/viewModels"
+
 	uuid "github.com/nu7hatch/gouuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+func Login(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var user models.User
+	var response = models.Success{}
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	userResult, err := service.GetUser(database, user.ToQueryBson())
+	// if no user found then insert a new one and return
+	if userResult == nil {
+		_, err := service.SaveUser(database, user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+		// check if insert user
+		_, err = service.GetUser(database, user.ToQueryBson())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+		response.Success = true
+		response.Message = "Add New User"
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
+	// if already has users
+	response.Success = true
+	response.Message = "User Login"
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
 
 func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var queryInfo map[string]string
@@ -54,27 +91,26 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 }
 
 func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	// [TODO]: Change userId to real Login user
-	var userId = "tester01"
-	var queryTask models.MRCTask
+	var queryInfo map[string]string
 	var result viewModels.TasksViewModel
-	// decode request condition to queryTask
-	err := json.NewDecoder(r.Body).Decode(&queryTask)
+	// decode request condition to queryInfo
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	log.Println("GetTasksByArticleId queryInfo:", queryInfo)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
 	// get tasks by articles
-	tasks, err := service.GetTasksByArticleId(database, queryTask.ToQueryBson())
+	tasks, err := service.GetTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
 
 	// get ArticleInfo
-	result.ArticleId = queryTask.ArticleId
-	result.TaskType = queryTask.TaskType
-	articleResult, err := service.GetArticleByArticleId(database, bson.M{"articleId": queryTask.ArticleId})
+	result.ArticleId = queryInfo["ArticleId"]
+	result.TaskType = queryInfo["TaskType"]
+	articleResult, err := service.GetArticleByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -88,7 +124,7 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 			Context:  task.Context,
 			Answered: task.Answered,
 		}
-		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: userId, TaskId: task.TaskId})
+		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: queryInfo["userId"], ArticleId: queryInfo["articleId"], TaskId: task.TaskId})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return err
@@ -142,6 +178,10 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		return err
 	}
 	answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: requestBody["userId"], ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
 	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
