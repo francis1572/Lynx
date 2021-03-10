@@ -8,7 +8,7 @@ type MRCTask struct {
 	TaskId    string `bson:"taskId" json:"taskId"`
 	ArticleId string `bson:"articleId" json:"articleId"`
 	TaskType  string `bson:"taskType" json:"taskType"`
-	TaskTitle  string `bson:"taskTitle" json:"taskTitle"`
+	TaskTitle string `bson:"taskTitle" json:"taskTitle"`
 	Context   string `bson:"context" json:"context"`
 	Answered  int    `bson:"answered" json:"answered"`
 }
@@ -20,10 +20,10 @@ func (t *MRCTask) TableName() string {
 func (t *MRCTask) ToQueryBson() bson.M {
 	var queryObject bson.M
 	if t.TaskId != "" {
-		queryObject = bson.M {
+		queryObject = bson.M{
 			"articleId": t.ArticleId,
-			"taskId": t.TaskId,
-			"taskType": t.TaskType,
+			"taskId":    t.TaskId,
+			"taskType":  t.TaskType,
 		}
 	} else {
 		queryObject = bson.M{
@@ -35,7 +35,7 @@ func (t *MRCTask) ToQueryBson() bson.M {
 
 type MRCAnswer struct {
 	UserId     string `bson:"userId" json:"userId"`
-	ArticleId string `bson:"articleId" json:"articleId"`
+	ArticleId  string `bson:"articleId" json:"articleId"`
 	TaskId     string `bson:"taskId" json:"taskId"`
 	TaskType   string `bson:"taskType" json:"taskType"`
 	IsValidate bool   `bson:"isValidate" json:"isValidate"`
@@ -46,15 +46,16 @@ type MRCAnswer struct {
 func (a *MRCAnswer) ToQueryBson() bson.M {
 	var queryObject bson.M
 	if a.UserId == "" {
-		queryObject = bson.M {
+		queryObject = bson.M{
 			"articleId": a.ArticleId,
-			"taskId": a.TaskId,
-			"taskType": a.TaskType,
+			"taskId":    a.TaskId,
+			"taskType":  a.TaskType,
 		}
 	} else {
 		queryObject = bson.M{
-			"userId": a.UserId,
-			"taskId": a.TaskId,
+			"userId":    a.UserId,
+			"articleId": a.ArticleId,
+			"taskId":    a.TaskId,
 		}
 	}
 	return queryObject
