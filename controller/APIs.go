@@ -67,24 +67,26 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	for i, article := range articles {
-		// get how many tasks that each article has
-		tasks, err := service.GetTasksByArticleId(database, article.ToQueryBson())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return err
-		}
-		articles[i].TotalTasks = len(tasks)
-		for _, task := range tasks {
-			answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: userId, TaskId: task.TaskId})
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return err
-			}
-			// get how many tasks user has answered
-			articles[i].Answered = len(answers)
-		}
-	}
+
+	// [PENDING] Further information for articles
+	// for i, article := range articles {
+	// 	// get how many tasks that each article has
+	// 	tasks, err := service.GetTasksByArticleId(database, article.ToQueryBson())
+	// 	if err != nil {
+	// 		http.Error(w, err.Error(), http.StatusBadRequest)
+	// 		return err
+	// 	}
+	// 	articles[i].TotalTasks = len(tasks)
+	// 	for _, task := range tasks {
+	// 		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: userId, TaskId: task.TaskId})
+	// 		if err != nil {
+	// 			http.Error(w, err.Error(), http.StatusBadRequest)
+	// 			return err
+	// 		}
+	// 		// get how many tasks user has answered
+	// 		articles[i].Answered = len(answers)
+	// 	}
+	// }
 	jsondata, _ := json.Marshal(articles)
 	w.Write(jsondata)
 	return nil
@@ -121,14 +123,15 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 	for _, task := range tasks {
 		var t = viewModels.TaskListModel{
 			TaskId:   task.TaskId,
+			TaskTitle: task.TaskTitle,
 			Context:  task.Context,
-			Answered: task.Answered,
 		}
 		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: queryInfo["userId"], ArticleId: queryInfo["articleId"], TaskId: task.TaskId})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return err
 		}
+		t.Answered = len(answers)
 		// if user has answers the question
 		if len(answers) != 0 {
 			t.IsAnswered = true
@@ -140,6 +143,7 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 	return nil
 }
 
+//[TODO] update MRCTask for answered + 1
 func SaveArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	collection := database.Collection("Articles")
 	var articles []models.Article
@@ -177,6 +181,7 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
+	log.Println("GetTaskById queryInfo:", requestBody)
 	answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: requestBody["userId"], ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
