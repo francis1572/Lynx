@@ -108,7 +108,7 @@ func GetAnswers(db *mongo.Database, task models.MRCAnswer) ([]*models.MRCAnswer,
 		result := models.MRCAnswer{}
 		err := cur.Decode(&result)
 		if err != nil {
-			log.Println("Decode articles Error", err)
+			log.Println("Decode answer Error", err)
 			return nil, err
 		}
 		answers = append(answers, &result)
