@@ -32,14 +32,23 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/":
 		sayhelloName(w, r)
 		return
+	case "/login":
+		respond.Login(Database, w, r)
+		return
 	case "/articles":
 		respond.GetArticles(Database, w, r)
+		return
+	case "/sentiArticles":
+		respond.GetSentiArticles(Database, w, r)
 		return
 	case "/saveArticles":
 		respond.SaveArticles(Database, w, r)
 		return
 	case "/tasks":
 		respond.GetTasksByArticleId(Database, w, r)
+		return
+	case "/sentiTasks":
+		respond.GetSentiTasksByArticleId(Database, w, r)
 		return
 	case "/getTask":
 		log.Println("POST /getTask")
