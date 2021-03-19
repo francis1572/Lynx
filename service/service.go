@@ -215,6 +215,18 @@ func GetAspectByTaskId(db *mongo.Database, task models.SentiAspect) ([]*models.S
 	return aspects, nil
 }
 
+func GetSentiTaskById(db *mongo.Database, taskModel models.SentiTask) (*models.SentiTask, error) {
+	TaskCollection := db.Collection("SentiTask")
+	var task models.SentiTask
+	result := TaskCollection.FindOne(context.Background(), taskModel.ToQueryBson())
+	err := result.Decode(&task)
+	if err != nil {
+		log.Println("Decode task Error", err)
+		return nil, err
+	}
+	return &task, nil
+}
+
 //這邊要等到 validation 的時候才會用到
 // func GetSentiAnswer(db *mongo.Database, task models.MRCAnswer) ([]*models.MRCAnswer, error) {
 // 	AnswerCollection := db.Collection("MRCAnswer")

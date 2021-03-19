@@ -2,7 +2,7 @@ package viewModels
 
 type TaskListModel struct {
 	TaskId     string `bson:"taskId" json:"taskId"`
-	TaskTitle	string `bson:"taskTitle" json:"taskTitle"`
+	TaskTitle  string `bson:"taskTitle" json:"taskTitle"`
 	Context    string `bson:"context" json:"context"`
 	Answered   int    `bson:"answered" json:"answered"`
 	IsAnswered bool   `bson:"isAnswered" json:"isAnswered"`
@@ -41,4 +41,13 @@ type TaskViewModel struct {
 	Context   string        `bson:"context" json:"context"`
 	Answered  int           `bson:"answered" json:"answered"`
 	QAPairs   []QAPairModel `bson:"qaList" json:"qaList"`
+}
+
+type SentiTaskViewModel struct {
+	TaskId     string   `bson:"taskId" json:"taskId"`
+	TaskType   string   `bson:"taskType" json:"taskType"`
+	TaskTitle  string   `bson:"taskTitle" json:"taskTitle"`
+	Context    string   `bson:"context" json:"context"`
+	AspectPool []string `bson:"aspectPool" json:"aspectPool"`
+	IsAnswered bool     `bson:"isAnswered" json:"isAnswered"`
 }
