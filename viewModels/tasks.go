@@ -2,7 +2,7 @@ package viewModels
 
 type TaskListModel struct {
 	TaskId     string `bson:"taskId" json:"taskId"`
-	TaskTitle  string `bson:"taskTitle" json:"taskTitle"`
+	TaskTitle string `bson:"taskTitle" json:"taskTitle"`
 	Context    string `bson:"context" json:"context"`
 	Answered   int    `bson:"answered" json:"answered"`
 	IsAnswered bool   `bson:"isAnswered" json:"isAnswered"`

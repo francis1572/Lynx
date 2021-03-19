@@ -122,9 +122,9 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 	// get tasksInfo
 	for _, task := range tasks {
 		var t = viewModels.TaskListModel{
-			TaskId:    task.TaskId,
+			TaskId:   task.TaskId,
 			TaskTitle: task.TaskTitle,
-			Context:   task.Context,
+			Context:  task.Context,
 		}
 		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: queryInfo["userId"], ArticleId: queryInfo["articleId"], TaskId: task.TaskId})
 		if err != nil {
