@@ -245,3 +245,120 @@ func Test(w http.ResponseWriter, r *http.Request) error {
 	_, _ = w.Write(jsondata)
 	return nil
 }
+
+//================================= sentiment API =================================
+func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	var articles []models.Article
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	var userId = queryInfo["userId"]
+	log.Println(userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	articles, err = service.GetSentiArticles(database)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	jsondata, _ := json.Marshal(articles)
+	w.Write(jsondata)
+	return nil
+}
+
+func GetSentiTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	var result viewModels.SentiTasksViewModel
+	// decode request condition to queryInfo
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	log.Println("GetSentiTasksByArticleId queryInfo:", queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// get tasks by articles
+	tasks, err := service.GetSentiTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// get ArticleInfo
+	result.ArticleId = queryInfo["articleId"]
+	result.TaskType = queryInfo["taskType"]
+	articleResult, err := service.GetSentiArticleByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	result.ArticleTitle = articleResult.ArticleTitle
+
+	// get tasksInfo
+	for _, task := range tasks {
+		var t = viewModels.SentiTaskListModel{
+			TaskId:     task.TaskId,
+			TaskTitle:  task.TaskTitle,
+			Context:    task.Context,
+			AspectPool: task.AspectPool,
+		}
+
+		answers, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: task.TaskId})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+		// if user has answers the question
+		if len(answers) != 0 {
+			t.IsAnswered = true
+		}
+
+		result.TaskList = append(result.TaskList, t)
+	}
+	jsondata, _ := json.Marshal(result)
+	w.Write(jsondata)
+	return nil
+}
+
+// validation 才會用到的
+
+// func GetSentiTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+// 	var requestBody map[string]string
+// 	err := json.NewDecoder(r.Body).Decode(&requestBody)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	log.Println("GetSentiTaskById queryInfo:", requestBody)
+
+// 	aspects, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: requestBody["taskId"]})
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+
+// 	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	var response viewModels.TaskViewModel
+// 	// var response viewModels.SentiTasksViewModel
+// 	response.TaskId = task.TaskId
+// 	response.TaskType = task.TaskType
+// 	response.TaskTitle = task.TaskTitle
+// 	response.Answered = task.Answered
+// 	response.Context = task.Context
+
+// 	for _, answer := range answers {
+// 		var QAPair = viewModels.QAPairModel{
+// 			Question: answer.Question,
+// 			Answer:   answer.Answer,
+// 		}
+// 		response.QAPairs = append(response.QAPairs, QAPair)
+// 	}
+
+// 	jsondata, _ := json.Marshal(response)
+// 	_, _ = w.Write(jsondata)
+// 	return nil
+// }
