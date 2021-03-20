@@ -140,6 +140,8 @@ func SaveAnswer(db *mongo.Database, answer models.MRCAnswer) (*mongo.InsertOneRe
 	return res, nil
 }
 
+// func GetValidationQuestion(db *mongo.Database, task *models.)
+
 //================================= sentiment API =================================
 func GetSentiArticles(db *mongo.Database) ([]models.Article, error) {
 	collection := db.Collection("SentiArticles")

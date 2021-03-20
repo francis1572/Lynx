@@ -45,17 +45,18 @@ type MRCAnswer struct {
 
 func (a *MRCAnswer) ToQueryBson() bson.M {
 	var queryObject bson.M
-	if a.UserId == "" {
+	if a.TaskType == "Validation" {
 		queryObject = bson.M{
+			"userId": bson.M {"$ne": a.UserId},
 			"articleId": a.ArticleId,
 			"taskId":    a.TaskId,
 			"taskType":  a.TaskType,
 		}
 	} else {
 		queryObject = bson.M{
-			"userId":    a.UserId,
 			"articleId": a.ArticleId,
 			"taskId":    a.TaskId,
+			"taskType":  a.TaskType,
 		}
 	}
 	return queryObject

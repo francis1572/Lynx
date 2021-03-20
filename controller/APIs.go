@@ -182,7 +182,7 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		return err
 	}
 	log.Println("GetTaskById queryInfo:", requestBody)
-	answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: requestBody["userId"], ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
+	answers, err := service.GetAnswers(database, models.MRCAnswer{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
