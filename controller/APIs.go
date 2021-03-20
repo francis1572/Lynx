@@ -256,15 +256,18 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 		return err
 	}
 	questionPair, err := service.GetRandomValidationQuestion(database, models.MRCAnswer{UserId: queryInfo["userId"], TaskType: queryInfo["taskType"]})
+	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: questionPair.ArticleId, TaskId: questionPair.TaskId, TaskType: questionPair.TaskType})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	var response viewModels.QAPairModel
+	var response viewModels.ValidationQAPairModel
 	response.Question = questionPair.Question
 	response.Answer = questionPair.Answer
 	response.ArticleId = questionPair.ArticleId
 	response.TaskId = questionPair.TaskId
+	response.TaskTitle = task.TaskTitle
+	response.TaskContext = task.Context
 	jsondata, _ := json.Marshal(response)
 	w.Write(jsondata)
 	return nil

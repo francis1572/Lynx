@@ -36,6 +36,15 @@ type QAPairModel struct {
 	Answer    string `bson:"answer" json:"answer"`
 }
 
+type ValidationQAPairModel struct {
+	ArticleId   string `bson:"articleId" json:"articleId"`
+	TaskId      string `bson:"taskId" json:"taskId"`
+	Question    string `bson:"question" json:"question"`
+	Answer      string `bson:"answer" json:"answer"`
+	TaskTitle   string `bson:"taskTitle" json:"taskTitle"`
+	TaskContext string `bson:"taskContext" json:"taskContext"`
+}
+
 type TaskViewModel struct {
 	TaskId    string        `bson:"taskId" json:"taskId"`
 	TaskType  string        `bson:"taskType" json:"taskType"`

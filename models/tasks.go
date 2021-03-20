@@ -23,7 +23,7 @@ func (t *MRCTask) ToQueryBson() bson.M {
 		queryObject = bson.M{
 			"articleId": t.ArticleId,
 			"taskId":    t.TaskId,
-			"taskType":  t.TaskType,
+			"taskType":  "MRC",
 		}
 	} else {
 		queryObject = bson.M{
