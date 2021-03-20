@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"Lynx/db"
+
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -15,7 +16,7 @@ var (
 )
 
 func main() {
-	Database = client.Database("LINE_LABEL")
+	Database = client.Database("labelLabDB")
 	mux := &RouteMux{}
 	log.Println("Server Launched on port 9090")
 	handler := cors.Default().Handler(mux)
