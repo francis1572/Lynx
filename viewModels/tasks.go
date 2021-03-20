@@ -30,8 +30,10 @@ type SentiTasksViewModel struct {
 }
 
 type QAPairModel struct {
-	Question string `bson:"question" json:"question"`
-	Answer   string `bson:"answer" json:"answer"`
+	ArticleId string `bson:"articleId" json:"articleId"`
+	TaskId    string `bson:"taskId" json:"taskId"`
+	Question  string `bson:"question" json:"question"`
+	Answer    string `bson:"answer" json:"answer"`
 }
 
 type TaskViewModel struct {

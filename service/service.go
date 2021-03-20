@@ -140,7 +140,17 @@ func SaveAnswer(db *mongo.Database, answer models.MRCAnswer) (*mongo.InsertOneRe
 	return res, nil
 }
 
-// func GetValidationQuestion(db *mongo.Database, task *models.)
+func GetRandomValidationQuestion(db *mongo.Database, question models.MRCAnswer) (*models.MRCAnswer, error) {
+	AnswerCollection := db.Collection("MRCAnswer")
+	var questionPair models.MRCAnswer
+	res := AnswerCollection.FindOne(context.Background(), question.ToQueryBson())
+	err := res.Decode(&questionPair)
+	if err != nil {
+		log.Println("Decode task Error", err)
+		return nil, err
+	}
+	return &questionPair, nil
+}
 
 //================================= sentiment API =================================
 func GetSentiArticles(db *mongo.Database) ([]models.Article, error) {

@@ -246,6 +246,30 @@ func Test(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	var userId = queryInfo["userId"]
+	log.Println("userId", userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	questionPair, err := service.GetRandomValidationQuestion(database, models.MRCAnswer{UserId: queryInfo["userId"], TaskType: queryInfo["taskType"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response viewModels.QAPairModel
+	response.Question = questionPair.Question
+	response.Answer = questionPair.Answer
+	response.ArticleId = questionPair.ArticleId
+	response.TaskId = questionPair.TaskId
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
+
 //================================= sentiment API =================================
 func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var queryInfo map[string]string
