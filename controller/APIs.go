@@ -202,7 +202,6 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	for _, answer := range answers {
 		var QAPair = viewModels.QAPairModel{
 			Question: answer.Question,
-			Answer:   answer.Answer,
 		}
 		response.QAPairs = append(response.QAPairs, QAPair)
 	}

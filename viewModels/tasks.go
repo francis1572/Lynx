@@ -31,7 +31,6 @@ type SentiTasksViewModel struct {
 
 type QAPairModel struct {
 	Question  string `bson:"question" json:"question"`
-	Answer    string `bson:"answer" json:"answer"`
 }
 
 type ValidationQAPairModel struct {
