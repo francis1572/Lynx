@@ -263,7 +263,6 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 	}
 	var response viewModels.ValidationQAPairModel
 	response.Question = questionPair.Question
-	response.Answer = questionPair.Answer
 	response.ArticleId = questionPair.ArticleId
 	response.TaskId = questionPair.TaskId
 	response.TaskTitle = task.TaskTitle

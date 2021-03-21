@@ -40,7 +40,6 @@ type ValidationQAPairModel struct {
 	ArticleId   string `bson:"articleId" json:"articleId"`
 	TaskId      string `bson:"taskId" json:"taskId"`
 	Question    string `bson:"question" json:"question"`
-	Answer      string `bson:"answer" json:"answer"`
 	TaskTitle   string `bson:"taskTitle" json:"taskTitle"`
 	TaskContext string `bson:"taskContext" json:"taskContext"`
 }
