@@ -227,6 +227,18 @@ func GetSentiTaskById(db *mongo.Database, taskModel models.SentiTask) (*models.S
 	return &task, nil
 }
 
+func SaveSentiAnswer(db *mongo.Database, answer models.SentiAnswer) (*mongo.InsertOneResult, error) {
+	AnswerCollection := db.Collection("SentiAnswer")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := AnswerCollection.InsertOne(ctx, answer)
+	if err != nil {
+		log.Println("Insert answers Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
 //這邊要等到 validation 的時候才會用到
 // func GetSentiAnswer(db *mongo.Database, task models.MRCAnswer) ([]*models.MRCAnswer, error) {
 // 	AnswerCollection := db.Collection("MRCAnswer")

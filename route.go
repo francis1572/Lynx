@@ -62,6 +62,10 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println("POST /SaveAnswer")
 		respond.SaveAnswer(Database, w, r)
 		return
+	case "/saveSentiAnswer":
+		log.Println("POST /SaveSentiAnswer")
+		respond.SaveSentiAnswer(Database, w, r)
+		return
 	case "/test":
 		respond.Test(w, r)
 		return

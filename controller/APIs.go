@@ -364,6 +364,29 @@ func GetSentiTaskById(database *mongo.Database, w http.ResponseWriter, r *http.R
 	return nil
 }
 
+func SaveSentiAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.SentiAnswer
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	res, err := service.SaveSentiAnswer(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	var response = models.Success{
+		Success: true,
+		Message: res.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
 // validation 才會用到的
 
 // func GetSentiTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
