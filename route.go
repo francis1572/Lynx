@@ -54,9 +54,17 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println("POST /getTask")
 		respond.GetTaskById(Database, w, r)
 		return
+	case "/getSentiTask":
+		log.Println("POST /getSentiTask")
+		respond.GetSentiTaskById(Database, w, r)
+		return
 	case "/saveAnswer":
 		log.Println("POST /SaveAnswer")
 		respond.SaveAnswer(Database, w, r)
+		return
+	case "/saveSentiAnswer":
+		log.Println("POST /SaveSentiAnswer")
+		respond.SaveSentiAnswer(Database, w, r)
 		return
 	case "/test":
 		respond.Test(w, r)
