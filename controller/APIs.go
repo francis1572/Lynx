@@ -366,24 +366,28 @@ func GetSentiTaskById(database *mongo.Database, w http.ResponseWriter, r *http.R
 
 func SaveSentiAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var requestBody models.SentiAnswer
+
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody.Aspect)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
 
-	res, err := service.SaveSentiAnswer(database, requestBody)
+	_, err = service.SaveSentiAnswer(database, requestBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
 
-	var response = models.Success{
-		Success: true,
-		Message: res.InsertedID.(primitive.ObjectID).Hex(),
-	}
-	jsondata, _ := json.Marshal(response)
-	_, _ = w.Write(jsondata)
+	// var response = models.Success{
+	// 	Success: true,
+	// 	// Message: res.InsertedID.(primitive.ObjectID).Hex(),
+	// 	Message: res.InsertedIDs,
+	// }
+	// jsondata, _ := json.Marshal(response)
+	// _, _ = w.Write(jsondata)
 	return nil
 }
 
