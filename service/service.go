@@ -227,13 +227,28 @@ func GetSentiTaskById(db *mongo.Database, taskModel models.SentiTask) (*models.S
 	return &task, nil
 }
 
-func SaveSentiAnswer(db *mongo.Database, answer models.SentiAnswer) (*mongo.InsertOneResult, error) {
-	AnswerCollection := db.Collection("SentiAnswer")
+func SaveSentiAnswer(db *mongo.Database, answer models.SentiAnswer) (*mongo.InsertManyResult, error) {
+	AspectCollection := db.Collection("SentiAspect")
+	aspectList := make([]interface{}, len(answer.Aspect))
+	for i := range answer.Aspect {
+		aspectList[i] = answer.Aspect[i]
+	}
+	SentiCollection := db.Collection("SentiSentiment")
+	sentiList := make([]interface{}, len(answer.Sentiment))
+	for i := range answer.Sentiment {
+		sentiList[i] = answer.Sentiment[i]
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	res, err := AnswerCollection.InsertOne(ctx, answer)
+	res, err := AspectCollection.InsertMany(ctx, aspectList)
 	if err != nil {
-		log.Println("Insert answers Error", err)
+		log.Println("Insert aspects Error", err)
+		return nil, err
+	}
+	res, err = SentiCollection.InsertMany(ctx, sentiList)
+	if err != nil {
+		log.Println("Insert sentiments Error", err)
 		return nil, err
 	}
 	return res, nil
