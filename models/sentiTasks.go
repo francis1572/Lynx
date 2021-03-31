@@ -56,12 +56,12 @@ func (a *SentiSentiment) ToQueryBson() bson.M {
 }
 
 type SentiAspect struct {
-	TaskId        string           `bson:"taskId" json:"taskId"`
-	AspectId      string           `bson:"aspectId" json:"aspectId"`
-	MajorAspect   string           `bson:"majorAspect" json:"majorAspect"`
-	MinorAspect   string           `bson:"minorAspect" json:"minorAspect"`
-	Offset        int              `bson:"offset" json:"offset"`
-	SentimentList []SentiSentiment `bson:"sentimentList" json:"sentimentList"`
+	TaskId      string `bson:"taskId" json:"taskId"`
+	AspectId    string `bson:"aspectId" json:"aspectId"`
+	MajorAspect string `bson:"majorAspect" json:"majorAspect"`
+	MinorAspect string `bson:"minorAspect" json:"minorAspect"`
+	Offset      int    `bson:"offset" json:"offset"`
+	// SentimentList []SentiSentiment `bson:"sentimentList" json:"sentimentList"`
 }
 
 func (t *SentiAspect) TableName() string {
@@ -75,29 +75,33 @@ func (a *SentiAspect) ToQueryBson() bson.M {
 	return queryObject
 }
 
+// type SentiAnswer struct {
+// 	UserId     string        `bson:"userId" json:"userId"`
+// 	ArticleId  string        `bson:"articleId" json:"articleId"`
+// 	TaskId     string        `bson:"taskId" json:"taskId"`
+// 	TaskType   string        `bson:"taskType" json:"taskType"`
+// 	AnswerList []SentiAspect `bson:"answerList" json:"answerList"`
+// 	IsValidate bool          `bson:"isValidate" json:"isValidate"`
+// }
 type SentiAnswer struct {
-	UserId     string        `bson:"userId" json:"userId"`
-	ArticleId  string        `bson:"articleId" json:"articleId"`
-	TaskId     string        `bson:"taskId" json:"taskId"`
-	TaskType   string        `bson:"taskType" json:"taskType"`
-	AnswerList []SentiAspect `bson:"answerList" json:"answerList"`
-	IsValidate bool          `bson:"isValidate" json:"isValidate"`
+	Aspect    []SentiAspect    `bson:"aspect" json:"aspect"`
+	Sentiment []SentiSentiment `bson:"sentimentt" json:"sentiment"`
 }
 
-func (a *SentiAnswer) ToQueryBson() bson.M {
-	var queryObject bson.M
-	if a.UserId == "" {
-		queryObject = bson.M{
-			"articleId": a.ArticleId,
-			"taskId":    a.TaskId,
-			"taskType":  a.TaskType,
-		}
-	} else {
-		queryObject = bson.M{
-			"userId":    a.UserId,
-			"articleId": a.ArticleId,
-			"taskId":    a.TaskId,
-		}
-	}
-	return queryObject
-}
+// func (a *SentiAnswer) ToQueryBson() bson.M {
+// 	var queryObject bson.M
+// 	if a.UserId == "" {
+// 		queryObject = bson.M{
+// 			"articleId": a.ArticleId,
+// 			"taskId":    a.TaskId,
+// 			"taskType":  a.TaskType,
+// 		}
+// 	} else {
+// 		queryObject = bson.M{
+// 			"userId":    a.UserId,
+// 			"articleId": a.ArticleId,
+// 			"taskId":    a.TaskId,
+// 		}
+// 	}
+// 	return queryObject
+// }

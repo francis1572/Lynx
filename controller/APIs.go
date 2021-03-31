@@ -122,9 +122,9 @@ func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *htt
 	// get tasksInfo
 	for _, task := range tasks {
 		var t = viewModels.TaskListModel{
-			TaskId:   task.TaskId,
+			TaskId:    task.TaskId,
 			TaskTitle: task.TaskTitle,
-			Context:  task.Context,
+			Context:   task.Context,
 		}
 		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: queryInfo["userId"], ArticleId: queryInfo["articleId"], TaskId: task.TaskId})
 		if err != nil {
@@ -342,6 +342,77 @@ func GetSentiTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r
 	}
 	jsondata, _ := json.Marshal(result)
 	w.Write(jsondata)
+	return nil
+}
+
+func GetSentiTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetSentiTaskById queryInfo:", requestBody)
+
+	aspects, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: requestBody["taskId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	task, err := service.GetSentiTaskById(database, models.SentiTask{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response viewModels.SentiTaskViewModel
+	// var response viewModels.SentiTasksViewModel
+	response.TaskId = task.TaskId
+	response.TaskType = task.TaskType
+	response.TaskTitle = task.TaskTitle
+	response.Context = task.Context
+	response.AspectPool = task.AspectPool
+	if len(aspects) != 0 {
+		response.IsAnswered = true
+	}
+
+	// for _, answer := range answers {
+	// 	var QAPair = viewModels.QAPairModel{
+	// 		Question: answer.Question,
+	// 		Answer:   answer.Answer,
+	// 	}
+	// 	response.QAPairs = append(response.QAPairs, QAPair)
+	// }
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func SaveSentiAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.SentiAnswer
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody.Aspect)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	_, err = service.SaveSentiAnswer(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// var response = models.Success{
+	// 	Success: true,
+	// 	// Message: res.InsertedID.(primitive.ObjectID).Hex(),
+	// 	Message: res.InsertedIDs,
+	// }
+	// jsondata, _ := json.Marshal(response)
+	// _, _ = w.Write(jsondata)
 	return nil
 }
 
