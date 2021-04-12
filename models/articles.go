@@ -10,6 +10,7 @@ type Article struct {
 	ArticleTitle string `bson:"articleTitle" json:"articleTitle"`
 	TotalTasks   int    `bson:"totalTasks" json:"totalTasks"`
 	Answered     int    `bson:"answered" json:"answered"`
+	LabelInfo    string `bson:"labelInfo" json:"labelInfo"`
 }
 
 //TableName return name of database table

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"Lynx/models"
 	"Lynx/service"
@@ -52,12 +53,125 @@ func Login(database *mongo.Database, w http.ResponseWriter, r *http.Request) err
 	return nil
 }
 
+func GetUsersByProject(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	projectId, _ := strconv.Atoi(queryInfo["projectId"])
+	var queryAuth = models.Auth{ProjectId: projectId}
+	auths, err := service.GetAuthByProjectId(database, queryAuth)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("Authes", auths)
+	var userIds []string
+	for _, auth := range auths {
+		userIds = append(userIds, auth.UserId)
+	}
+	users, err := service.GetUsersByIds(database, userIds)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	var result = []viewModels.ProjectManageViewModel{}
+	for _, user := range users {
+		var userAuth = models.Auth{}
+		for _, auth := range auths {
+			if auth.UserId == user.UserId {
+				userAuth = auth
+				break
+			}
+		}
+		var userViewModel = viewModels.ProjectManageViewModel{
+			ProjectId:  userAuth.ProjectId,
+			UserId:     userAuth.UserId,
+			CodeType:   userAuth.CodeType,
+			StatusCode: userAuth.StatusCode,
+			Name:       user.Name,
+			Email:      user.Email,
+			ImageUrl:   user.ImageUrl,
+		}
+		result = append(result, userViewModel)
+	}
+
+	jsondata, _ := json.Marshal(result)
+	w.Write(jsondata)
+	return nil
+}
+
+func SaveAuth(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Auth
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	requestBody.CodeType = "1"
+	res, err := service.SaveAuth(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response = models.Success{
+		Success: true,
+		Message: res.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func GetUsers(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	users, err := service.GetUsers(database)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	jsondata, _ := json.Marshal(users)
+	w.Write(jsondata)
+	return nil
+}
+
+func GetProjects(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	var userId = queryInfo["userId"]
+	var queryAuth = models.Auth{UserId: userId, StatusCode: "1"}
+	log.Println(userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	projects, err := service.GetProjectsByAuth(database, queryAuth)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	jsondata, _ := json.Marshal(projects)
+	w.Write(jsondata)
+	return nil
+}
+
 func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var queryInfo map[string]string
+	var result viewModels.ProjectViewModel
 	var articles []models.Article
 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
 	var userId = queryInfo["userId"]
 	log.Println(userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	var queryProject = models.Project{ProjectId: 1}
+	projectResult, err := service.GetProjectByProjectId(database, queryProject)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -67,7 +181,11 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-
+	result.ProjectId = projectResult.ProjectId
+	result.ProjectName = projectResult.ProjectName
+	result.ProjectType = projectResult.ProjectType
+	result.LabelInfo = projectResult.LabelInfo
+	result.ArticleList = articles
 	// [PENDING] Further information for articles
 	// for i, article := range articles {
 	// 	// get how many tasks that each article has
@@ -87,7 +205,7 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	// 		articles[i].Answered = len(answers)
 	// 	}
 	// }
-	jsondata, _ := json.Marshal(articles)
+	jsondata, _ := json.Marshal(result)
 	w.Write(jsondata)
 	return nil
 }
