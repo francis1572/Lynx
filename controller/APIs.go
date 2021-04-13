@@ -182,7 +182,7 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		return err
 	}
 	log.Println("GetTaskById queryInfo:", requestBody)
-	answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: requestBody["userId"], ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
+	answers, err := service.GetAnswers(database, models.MRCAnswer{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -202,7 +202,6 @@ func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	for _, answer := range answers {
 		var QAPair = viewModels.QAPairModel{
 			Question: answer.Question,
-			Answer:   answer.Answer,
 		}
 		response.QAPairs = append(response.QAPairs, QAPair)
 	}
@@ -243,6 +242,32 @@ func Test(w http.ResponseWriter, r *http.Request) error {
 	log.Println(requestModel)
 	jsondata, _ := json.Marshal(models.InsertSuccess)
 	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	var userId = queryInfo["userId"]
+	log.Println("userId", userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	questionPair, err := service.GetRandomValidationQuestion(database, models.MRCAnswer{UserId: queryInfo["userId"], TaskType: queryInfo["taskType"]})
+	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: questionPair.ArticleId, TaskId: questionPair.TaskId, TaskType: questionPair.TaskType})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response viewModels.ValidationQAPairModel
+	response.Question = questionPair.Question
+	response.ArticleId = questionPair.ArticleId
+	response.TaskId = questionPair.TaskId
+	response.TaskTitle = task.TaskTitle
+	response.TaskContext = task.Context
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
 	return nil
 }
 

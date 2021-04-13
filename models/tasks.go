@@ -23,7 +23,7 @@ func (t *MRCTask) ToQueryBson() bson.M {
 		queryObject = bson.M{
 			"articleId": t.ArticleId,
 			"taskId":    t.TaskId,
-			"taskType":  t.TaskType,
+			"taskType":  "MRC",
 		}
 	} else {
 		queryObject = bson.M{
@@ -45,17 +45,17 @@ type MRCAnswer struct {
 
 func (a *MRCAnswer) ToQueryBson() bson.M {
 	var queryObject bson.M
-	if a.UserId == "" {
+	if a.TaskType == "MRCValidation" {
 		queryObject = bson.M{
-			"articleId": a.ArticleId,
-			"taskId":    a.TaskId,
+			"userId": bson.M{"$ne": a.UserId},
+			"isValidate": false,
 			"taskType":  a.TaskType,
 		}
 	} else {
 		queryObject = bson.M{
-			"userId":    a.UserId,
 			"articleId": a.ArticleId,
 			"taskId":    a.TaskId,
+			"taskType":  a.TaskType,
 		}
 	}
 	return queryObject

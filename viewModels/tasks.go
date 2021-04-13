@@ -30,8 +30,15 @@ type SentiTasksViewModel struct {
 }
 
 type QAPairModel struct {
-	Question string `bson:"question" json:"question"`
-	Answer   string `bson:"answer" json:"answer"`
+	Question  string `bson:"question" json:"question"`
+}
+
+type ValidationQAPairModel struct {
+	ArticleId   string `bson:"articleId" json:"articleId"`
+	TaskId      string `bson:"taskId" json:"taskId"`
+	Question    string `bson:"question" json:"question"`
+	TaskTitle   string `bson:"taskTitle" json:"taskTitle"`
+	TaskContext string `bson:"taskContext" json:"taskContext"`
 }
 
 type TaskViewModel struct {
