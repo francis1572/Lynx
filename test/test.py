@@ -31,9 +31,14 @@ r = requests.post(APIUrl+'tasks', json=query)
 response = r.json()
 response
 # %%
-query = {'ProductNumber': 0, 'quantity': 2}
-testURL = "https://localhost:44311/ProductDetail/Buy"
-r = requests.post(testURL, data=query, verify=False)
+query = {'userId': '117245596358325515598'}
+r = requests.post(APIUrl+'projects', json=query)
+response = r.json()
+response
+
+# %%
+query = {'projectId': "1"}
+r = requests.post(APIUrl+'users', json=query)
 response = r.json()
 response
 # %%

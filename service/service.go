@@ -11,6 +11,130 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+func GetAuthByProjectId(db *mongo.Database, auth models.Auth) ([]models.Auth, error) {
+	collection := db.Collection(auth.TableName())
+	var serviceResult = []models.Auth{}
+	cur, err := collection.Find(context.Background(), bson.M{"projectId": auth.ProjectId})
+	if err != nil {
+		log.Println("Find Project Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.Auth{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Auth Error", err)
+			return nil, err
+		}
+		serviceResult = append(serviceResult, result)
+	}
+	return serviceResult, nil
+}
+
+func GetProjectsByAuth(db *mongo.Database, auth models.Auth) ([]models.Project, error) {
+	collection := db.Collection(auth.TableName())
+	var authList = models.Auths{}
+	cur, err := collection.Find(context.Background(), auth.ToQueryBson())
+	log.Println("cur", cur)
+	log.Println("auth", auth.ToQueryBson())
+	if err != nil {
+		log.Println("Find Project Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.Auth{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Project Error", err)
+			return nil, err
+		}
+		authList = append(authList, result)
+	}
+	var projectIds = authList.SelectProjectIdList()
+	var serviceResult = []models.Project{}
+	for _, projectId := range projectIds {
+		project, err := GetProjectByProjectId(db, models.Project{ProjectId: projectId})
+		if err != nil {
+			return nil, err
+		}
+		serviceResult = append(serviceResult, *project)
+	}
+
+	return serviceResult, nil
+}
+
+func SaveAuth(db *mongo.Database, auth models.Auth) (*mongo.InsertOneResult, error) {
+	AuthCollection := db.Collection(auth.TableName())
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := AuthCollection.InsertOne(ctx, auth)
+	if err != nil {
+		log.Println("Insert auth Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func GetProjects(db *mongo.Database, userId string) ([]models.Project, error) {
+	collection := db.Collection("Project")
+	var serviceResult = []models.Project{}
+	cur, err := collection.Find(context.Background(), bson.M{"manager": userId})
+	if err != nil {
+		log.Println("Find Project Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.Project{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Project Error", err)
+			return nil, err
+		}
+		serviceResult = append(serviceResult, result)
+	}
+	return serviceResult, nil
+}
+
+func GetProjectByProjectId(db *mongo.Database, project models.Project) (*models.Project, error) {
+	collection := db.Collection("Project")
+	var serviceResult = models.Project{}
+	cur := collection.FindOne(context.Background(), project.ToQueryBson())
+	// if no project then return nil
+	if cur.Err() != nil {
+		log.Println("Can't find project in DB")
+		return nil, cur.Err()
+	}
+	// if has project then return
+	err := cur.Decode(&serviceResult)
+	if err != nil {
+		log.Println("Decode project Error", err)
+		return nil, err
+	}
+	log.Println("Get project:", serviceResult)
+	return &serviceResult, nil
+}
+
+func GetUsersByIds(db *mongo.Database, userIds []string) ([]models.User, error) {
+	collection := db.Collection("GUser")
+	var serviceResult = []models.User{}
+	log.Println("userIds", userIds)
+	cur, err := collection.Find(context.Background(), bson.M{"userId": bson.M{"$in": userIds}})
+	if err != nil {
+		log.Println("Find Users Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.User{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Users Error", err)
+			return nil, err
+		}
+		serviceResult = append(serviceResult, result)
+	}
+	return serviceResult, nil
+}
+
 func GetUser(db *mongo.Database, queryBson bson.M) (*models.User, error) {
 	collection := db.Collection("GUser")
 	var serviceResult = models.User{}
@@ -28,6 +152,26 @@ func GetUser(db *mongo.Database, queryBson bson.M) (*models.User, error) {
 	}
 	log.Println("Get user:", serviceResult)
 	return &serviceResult, nil
+}
+
+func GetUsers(db *mongo.Database) ([]models.User, error) {
+	collection := db.Collection("GUser")
+	var serviceResult = []models.User{}
+	cur, err := collection.Find(context.Background(), bson.M{})
+	if err != nil {
+		log.Println("Find user Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.User{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Article Error", err)
+			return nil, err
+		}
+		serviceResult = append(serviceResult, result)
+	}
+	return serviceResult, nil
 }
 
 func SaveUser(db *mongo.Database, user models.User) (*mongo.InsertOneResult, error) {
