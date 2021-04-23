@@ -38,9 +38,10 @@ type MRCAnswer struct {
 	ArticleId  string `bson:"articleId" json:"articleId"`
 	TaskId     string `bson:"taskId" json:"taskId"`
 	TaskType   string `bson:"taskType" json:"taskType"`
-	IsValidate bool   `bson:"isValidate" json:"isValidate"`
+	Status 	   string `bson:"status" json:"status"`
 	Question   string `bson:"question" json:"question"`
 	Answer     string `bson:"answer" json:"answer"`
+	StartIdx   int    `bson:"startIdx" json:"startIdx"`
 }
 
 func (a *MRCAnswer) ToQueryBson() bson.M {
@@ -48,7 +49,7 @@ func (a *MRCAnswer) ToQueryBson() bson.M {
 	if a.TaskType == "MRCValidation" {
 		queryObject = bson.M{
 			"userId": bson.M{"$ne": a.UserId},
-			"isValidate": false,
+			"status": "unverified",
 			"taskType":  a.TaskType,
 		}
 	} else {
