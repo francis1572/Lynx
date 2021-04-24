@@ -3,9 +3,11 @@ package respond
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"Lynx/models"
 	"Lynx/service"
@@ -126,6 +128,105 @@ func SaveAuth(database *mongo.Database, w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
+func SaveProject(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var addProjModel = viewModels.AddProjectViewModel{}
+	err := json.NewDecoder(r.Body).Decode(&addProjModel)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// assign new projectId to each member's authentication
+	currentId, err := service.GetProjectCount(database)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// check if csv format decode is correct first
+	articles, tasks, err := convertToArticlesAndTasks(addProjModel.CsvFile, int(currentId))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// then adding objects into db
+	addProjModel.Project.ProjectId = int(currentId)
+	projectResult, err := service.SaveProject(database, addProjModel.Project)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	for i := range addProjModel.Members {
+		addProjModel.Members[i].ProjectId = int(currentId)
+	}
+	log.Println("addProj members", addProjModel.Members)
+	_, err = service.SaveAuths(database, addProjModel.Members)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	_, err = service.SaveArticles(database, articles)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	_, err = service.SaveTasks(database, tasks)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response = models.Success{
+		Success: true,
+		Message: projectResult.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+// private func for decode articles and Tasks.
+func convertToArticlesAndTasks(csvFile [][]string, currentId int) ([]models.Article, []models.MRCTask, error) {
+	var articles []models.Article
+	var tasks []models.MRCTask
+	articleSets := make(map[string]int)
+	var ai int = -1 //point index of articles
+	for _, pair := range csvFile {
+		var contexts = pair[0]
+		var indices = strings.Split(pair[1], "-")
+		var articleId = "articleId" + indices[0]
+		var taskId = "taskId" + pair[1]
+		// basic check for the csv format
+		if len(pair) != 2 || len(indices) != 2 {
+			log.Println("錯誤的CSV檔案格式")
+			return nil, nil, errors.New("錯誤的CSV檔案格式")
+		}
+		// check if the articles already exist else create one
+		if _, ok := articleSets[articleId]; ok {
+			articles[ai].TotalTasks += 1
+		} else {
+			articleSets[articleId] = 1
+			var article = models.Article{
+				ArticleId:    articleId,
+				ProjectId:    currentId,
+				ArticleTitle: contexts,
+				TotalTasks:   1,
+			}
+			articles = append(articles, article)
+			ai += 1
+		}
+		var task = models.MRCTask{
+			TaskId:    taskId,
+			ArticleId: articleId,
+			TaskType:  "MRC",
+			TaskTitle: contexts,
+			Context:   contexts,
+		}
+		tasks = append(tasks, task)
+	}
+	return articles, tasks, nil
+}
+
 func GetUsers(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	users, err := service.GetUsers(database)
 	if err != nil {
@@ -170,6 +271,7 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
+	//[BUG]
 	var queryProject = models.Project{ProjectId: 1}
 	projectResult, err := service.GetProjectByProjectId(database, queryProject)
 	if err != nil {
