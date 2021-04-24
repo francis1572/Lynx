@@ -18,7 +18,7 @@ func (p *Project) TableName() string {
 
 func (p *Project) ToQueryBson() bson.M {
 	var queryObject bson.M
-	if p.ProjectId != 0 {
+	if p.ProjectId != -1 {
 		queryObject = bson.M{
 			"projectId": p.ProjectId,
 		}
