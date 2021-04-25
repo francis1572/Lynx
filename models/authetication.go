@@ -20,6 +20,13 @@ func (u *Auth) TableName() string {
 }
 
 func (u *Auth) ToQueryBson() bson.M {
+	// max auth
+	if u.StatusCode == "0" {
+		queryObject := bson.M{
+			"userId": u.UserId,
+		}
+		return queryObject
+	}
 	queryObject := bson.M{
 		"userId":     u.UserId,
 		"statusCode": u.StatusCode,

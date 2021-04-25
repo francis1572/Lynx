@@ -9,7 +9,6 @@ type Project struct {
 	ProjectName string `bson:"projectName" json:"projectName"`
 	ProjectType string `bson:"projectType" json:"projectType"`
 	LabelInfo   string `bson:"labelInfo" json:"labelInfo"`
-	Manager     string `bson:"manager" json:"manager"`
 }
 
 func (p *Project) TableName() string {

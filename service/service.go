@@ -94,7 +94,7 @@ func SaveAuths(db *mongo.Database, auths []models.Auth) (*mongo.InsertManyResult
 
 // save project articles
 func SaveArticles(db *mongo.Database, articles []models.Article) (*mongo.InsertManyResult, error) {
-	ArticleCollection := db.Collection("ArticlesTest")
+	ArticleCollection := db.Collection("Articles")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	// to insert into db, need to convert struct to interface{}
@@ -111,7 +111,7 @@ func SaveArticles(db *mongo.Database, articles []models.Article) (*mongo.InsertM
 }
 
 func SaveTasks(db *mongo.Database, tasks []models.MRCTask) (*mongo.InsertManyResult, error) {
-	TaskCollection := db.Collection("MRCTaskTest")
+	TaskCollection := db.Collection("MRCTask")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	// to insert into db, need to convert struct to interface{}
@@ -265,10 +265,10 @@ func SaveUser(db *mongo.Database, user models.User) (*mongo.InsertOneResult, err
 	return res, nil
 }
 
-func GetArticles(db *mongo.Database) ([]models.Article, error) {
+func GetArticlesByProjectId(db *mongo.Database, projectId int) ([]models.Article, error) {
 	collection := db.Collection("Articles")
 	var articles = []models.Article{}
-	cur, err := collection.Find(context.Background(), bson.M{})
+	cur, err := collection.Find(context.Background(), bson.M{"projectId": projectId})
 	if err != nil {
 		log.Println("Find Articles Error", err)
 		return nil, err

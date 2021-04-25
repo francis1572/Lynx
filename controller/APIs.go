@@ -242,7 +242,8 @@ func GetProjects(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	var queryInfo map[string]string
 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
 	var userId = queryInfo["userId"]
-	var queryAuth = models.Auth{UserId: userId, StatusCode: "1"}
+	var statusCode = queryInfo["statusCode"]
+	var queryAuth = models.Auth{UserId: userId, StatusCode: statusCode}
 	log.Println(userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -270,15 +271,14 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-
-	//[BUG]
-	var queryProject = models.Project{ProjectId: 1}
+	projectId, _ := strconv.Atoi(queryInfo["projectId"])
+	var queryProject = models.Project{ProjectId: projectId}
 	projectResult, err := service.GetProjectByProjectId(database, queryProject)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	articles, err = service.GetArticles(database)
+	articles, err = service.GetArticlesByProjectId(database, projectId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
