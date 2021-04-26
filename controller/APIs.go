@@ -493,6 +493,7 @@ func GetDecision(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		return err
 	}
 	var response viewModels.DecisionDataViewModel
+	response.ValidationStatusId = decisionInfo.Id
 	response.OriginalId = originalAnswer.Id
 	response.ValidationId = validationAnswer.Id
 	response.Question = originalAnswer.Question

@@ -73,16 +73,10 @@ func (a *MRCAnswer) ToQueryBson() bson.M {
 }
 
 type MRCValidation struct {
-	LabelUserId 	 	 string `bson:"labelUserId" json:"labelUserId"`
+	Id				 primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	LabelUserId 	 string `bson:"labelUserId" json:"labelUserId"`
 	ValidationUserId string `bson:"validationUserId" json:"validationUserId"`
-	OriginalId 			 primitive.ObjectID `bson:"originalId,omitempty" json:"originalId"`
-	ValidationId		 primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
-	Status   		 		 string `bson:"status" json:"status"`
-}
-
-func (a *MRCValidation) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"status": a.Status,
-	}
-	return queryObject
+	OriginalId 		 primitive.ObjectID `bson:"originalId,omitempty" json:"originalId"`
+	ValidationId	 primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
+	Status   		 string `bson:"status" json:"status"`
 }

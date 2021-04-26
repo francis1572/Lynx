@@ -70,6 +70,7 @@ type ValidationDataViewModel struct {
 }
 
 type DecisionDataViewModel struct {
+	ValidationStatusId  primitive.ObjectID `bson:"validationStatusId" json:"validationStatusId"`
 	OriginalId 			 		primitive.ObjectID `bson:"originalId,omitempty" json:"original"`
 	ValidationId 		 		primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
 	Question 				 		string `bson:"question" json:"question"`
