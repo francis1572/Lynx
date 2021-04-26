@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"time"
+	"reflect"
 
 	"Lynx/models"
 
@@ -284,6 +285,34 @@ func SaveAnswer(db *mongo.Database, answer models.MRCAnswer) (*mongo.InsertOneRe
 	return res, nil
 }
 
+func UpdateAnswer(db *mongo.Database, answer models.MRCValidation) (*mongo.UpdateResult, error) {
+	AnswerCollection := db.Collection("MRCAnswer")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	filter := bson.M{"_id": bson.M{"$eq": answer.OriginalId}}
+	update := bson.M{"$set": bson.M{"status": answer.Status}}
+	res, err := AnswerCollection.UpdateOne(ctx, filter, update)	
+	log.Println("res type", reflect.TypeOf(res).Kind())
+	if err != nil {
+		log.Println("update answer error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func SaveValidationStatus(db *mongo.Database, validationAnswer models.MRCValidation) (*mongo.InsertOneResult, error) {
+	log.Println("validation answer save:", validationAnswer)
+	ValidationCollection := db.Collection("MRCValidation")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := ValidationCollection.InsertOne(ctx, validationAnswer)
+	if err != nil {
+		log.Println("Insert answers Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
 func GetRandomValidationQuestion(db *mongo.Database, question models.MRCAnswer) (*models.MRCAnswer, error) {
 	AnswerCollection := db.Collection("MRCAnswer")
 	var questionPair models.MRCAnswer
@@ -294,6 +323,19 @@ func GetRandomValidationQuestion(db *mongo.Database, question models.MRCAnswer) 
 		return nil, err
 	}
 	return &questionPair, nil
+}
+
+func FindOriginalAnswerById(db *mongo.Database, validation models.MRCAnswer) (*models.MRCAnswer, error) {
+	AnswerCollection := db.Collection("MRCAnswer")
+	var originalAnswerInfo models.MRCAnswer
+	log.Println("Find original", validation)
+	res := AnswerCollection.FindOne(context.Background(), validation.ToQueryBson())
+	err := res.Decode(&originalAnswerInfo)
+	if err != nil {
+		log.Println("Decode original info error", err)
+		return nil, err
+	}
+	return &originalAnswerInfo, nil
 }
 
 //================================= sentiment API =================================

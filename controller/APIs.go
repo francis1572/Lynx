@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	// "reflect"
 
 	"Lynx/models"
 	"Lynx/service"
@@ -336,7 +337,6 @@ func SaveAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	log.Println("ss", requestBody)
 	res, err := service.SaveAnswer(database, requestBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -385,6 +385,74 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 	response.TaskId = questionPair.TaskId
 	response.TaskTitle = task.TaskTitle
 	response.TaskContext = task.Context
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
+
+func SaveValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	// Decode
+	var queryInfo map[string]string
+	log.Println("originalId", queryInfo["originalId"])
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	log.Println("queryInfo validationAnswer", len(queryInfo["validationAnswer"]))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// find original answer
+	id, err := primitive.ObjectIDFromHex(queryInfo["originalId"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	res, err := service.FindOriginalAnswerById(database, models.MRCAnswer{Id: id})
+	log.Println("original answer", res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// save validation answer
+	var validationAnswer models.MRCAnswer
+	validationAnswer.UserId = queryInfo["userId"]
+	validationAnswer.ArticleId = res.ArticleId
+	validationAnswer.TaskId = res.TaskId
+	validationAnswer.TaskType = "Validation"
+	validationAnswer.Status = "unverified"
+	validationAnswer.Question = res.Question
+	validationAnswer.Answer = queryInfo["validationAnswer"]
+	startIdx, err := strconv.Atoi(queryInfo["startIdx"])
+	validationAnswer.StartIdx = startIdx
+	result, err := service.SaveAnswer(database, validationAnswer)
+	log.Println("save result", result.InsertedID)
+	validationId := result.InsertedID.(primitive.ObjectID)
+
+	// check validation
+	var validationStatus models.MRCValidation
+	validationStatus.LabelUserId = res.UserId
+	validationStatus.ValidationUserId = queryInfo["userId"]
+	validationStatus.OriginalId = id
+	validationStatus.ValidationId = validationId
+	if res.Answer == queryInfo["validationAnswer"] && queryInfo["startIdx"] == strconv.Itoa(res.StartIdx) {
+		validationStatus.Status = "verified"
+	} else {
+		validationStatus.Status = "unverified"
+	}
+	log.Println("status info", validationStatus)
+	statusResult, err := service.SaveValidationStatus(database, validationStatus)
+	log.Println("status result", statusResult)
+
+	// update answer
+	updateResult, err := service.UpdateAnswer(database, validationStatus)
+	log.Println("update result", updateResult)
+
+	// result and response
+	var response = models.Success{
+		Success: true,
+		Message: statusResult.InsertedID.(primitive.ObjectID).Hex(),
+	}
 	jsondata, _ := json.Marshal(response)
 	w.Write(jsondata)
 	return nil

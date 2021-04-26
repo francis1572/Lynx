@@ -58,3 +58,10 @@ type SentiTaskViewModel struct {
 	AspectPool []string `bson:"aspectPool" json:"aspectPool"`
 	IsAnswered bool     `bson:"isAnswered" json:"isAnswered"`
 }
+
+type ValidationDataViewModel struct {
+	UserId 			 string `bson:"userId" json:"userId"`
+	OriginalId 		 string `bson:"originalId" json:"original"`
+	ValidationAnswer string `bson:"validationAnswer" json:"validationAnswer"`
+	StartIdx 		 int `bson:"startIdx" json:"startIdx"`
+}
