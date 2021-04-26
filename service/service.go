@@ -301,6 +301,21 @@ func UpdateAnswer(db *mongo.Database, answer models.MRCValidation) (*mongo.Updat
 	return res, nil
 }
 
+func UpdateValidationStatus(db *mongo.Database, status models.MRCValidation) error {
+	ValidationCollection := db.Collection("MRCValidation")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	filter := bson.M{"validationId": bson.M{"$eq": status.OriginalId}}
+	update := bson.M{"$set": bson.M{"status": status.Status}}
+	res, err := ValidationCollection.UpdateOne(ctx, filter, update)	
+	log.Println("res", res)
+	if err != nil {
+		log.Println("update answer error", err)
+		return err
+	}
+	return nil
+}
+
 func SaveValidationStatus(db *mongo.Database, validationAnswer models.MRCValidation) (*mongo.InsertOneResult, error) {
 	log.Println("validation answer save:", validationAnswer)
 	ValidationCollection := db.Collection("MRCValidation")

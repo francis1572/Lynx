@@ -507,6 +507,44 @@ func GetDecision(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	return nil	
 }
 
+func SaveDecision(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// update answer
+	var decisionStatus models.MRCValidation
+	originalId, err := primitive.ObjectIDFromHex(queryInfo["originalId"])
+	decisionStatus.OriginalId = originalId
+	decisionStatus.Status = queryInfo["status"]
+	updateAnswer, err := service.UpdateAnswer(database, decisionStatus)
+	log.Println("updateAnswer", updateAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// update status
+	var validationStatus models.MRCValidation
+	validationStatusId, err := primitive.ObjectIDFromHex(queryInfo["validationStatusId"])
+	validationStatus.OriginalId = validationStatusId
+	validationStatus.Status = queryInfo["status"]
+	updateErr := service.UpdateValidationStatus(database, validationStatus)
+	if updateErr != nil {
+		http.Error(w, updateErr.Error(), http.StatusBadRequest)
+		return updateErr
+	}
+
+	var response = models.Success{
+		Success: true,
+		Message: "Update Successfully!",
+	}
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil	
+}
+
 //================================= sentiment API =================================
 func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var queryInfo map[string]string

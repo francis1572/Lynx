@@ -90,6 +90,10 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println("POST /getRandomDecision")
 		respond.GetDecision(Database, w, r)
 		return
+	case "/saveDecision":
+		log.Println("POST /SaveDecision")
+		respond.SaveDecision(Database, w, r)
+		return
 	case "/test":
 		respond.Test(w, r)
 		return
