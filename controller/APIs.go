@@ -407,7 +407,7 @@ func SaveValidation(database *mongo.Database, w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	res, err := service.FindOriginalAnswerById(database, models.MRCAnswer{Id: id})
+	res, err := service.FindAnswerById(database, id)
 	log.Println("original answer", res)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -456,6 +456,54 @@ func SaveValidation(database *mongo.Database, w http.ResponseWriter, r *http.Req
 	jsondata, _ := json.Marshal(response)
 	w.Write(jsondata)
 	return nil
+}
+
+func GetDecision(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	var userId = queryInfo["userId"]
+	log.Println("userId", userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	decisionInfo, err := service.GetRandomDecisionInfo(database, userId)
+	log.Println("decisionInfo", decisionInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}	
+	originalAnswer, err := service.FindAnswerById(database, decisionInfo.OriginalId)
+	log.Println("originalAnswer", originalAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	validationAnswer, err := service.FindAnswerById(database, decisionInfo.ValidationId)
+	log.Println("validationAnswer", validationAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: originalAnswer.ArticleId, TaskId: originalAnswer.TaskId, TaskType: "MRC"})
+	log.Println("task", task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response viewModels.DecisionDataViewModel
+	response.OriginalId = originalAnswer.Id
+	response.ValidationId = validationAnswer.Id
+	response.Question = originalAnswer.Question
+	response.OriginalAnswer = originalAnswer.Answer
+	response.OriginalStartIdx = originalAnswer.StartIdx
+	response.ValidationAnswer = validationAnswer.Answer
+	response.ValidationStartIdx = validationAnswer.StartIdx
+	response.OriginalTaskContext = task.Context
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil	
 }
 
 //================================= sentiment API =================================

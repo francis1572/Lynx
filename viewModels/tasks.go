@@ -1,4 +1,7 @@
 package viewModels
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type TaskListModel struct {
 	TaskId     string `bson:"taskId" json:"taskId"`
@@ -60,8 +63,19 @@ type SentiTaskViewModel struct {
 }
 
 type ValidationDataViewModel struct {
-	UserId 			 string `bson:"userId" json:"userId"`
-	OriginalId 		 string `bson:"originalId" json:"original"`
+	UserId 			 		 string `bson:"userId" json:"userId"`
+	OriginalId 		   string `bson:"originalId" json:"original"`
 	ValidationAnswer string `bson:"validationAnswer" json:"validationAnswer"`
-	StartIdx 		 int `bson:"startIdx" json:"startIdx"`
+	StartIdx 		 		 int `bson:"startIdx" json:"startIdx"`
+}
+
+type DecisionDataViewModel struct {
+	OriginalId 			 		primitive.ObjectID `bson:"originalId,omitempty" json:"original"`
+	ValidationId 		 		primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
+	Question 				 		string `bson:"question" json:"question"`
+	OriginalAnswer 	 		string `bson:"originalAnswer" json:"originalAnswer"`
+	OriginalStartIdx 		int `bson:"originalStartIdx" json:"originalStart"`
+	ValidationAnswer 		string `bson:"validationAnswer" json:"validationAnswer"`
+	ValidationStartIdx  int `bson:"validationStartIdx" json:"validationStartIdx"`
+	OriginalTaskContext string `bson:"originalTaskContext" json:"originalTaskContext"`
 }

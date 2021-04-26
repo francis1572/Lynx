@@ -10,6 +10,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetAuthByProjectId(db *mongo.Database, auth models.Auth) ([]models.Auth, error) {
@@ -325,17 +326,30 @@ func GetRandomValidationQuestion(db *mongo.Database, question models.MRCAnswer) 
 	return &questionPair, nil
 }
 
-func FindOriginalAnswerById(db *mongo.Database, validation models.MRCAnswer) (*models.MRCAnswer, error) {
+func FindAnswerById(db *mongo.Database, id primitive.ObjectID) (*models.MRCAnswer, error) {
 	AnswerCollection := db.Collection("MRCAnswer")
 	var originalAnswerInfo models.MRCAnswer
-	log.Println("Find original", validation)
-	res := AnswerCollection.FindOne(context.Background(), validation.ToQueryBson())
+	log.Println("Find original", id)
+	res := AnswerCollection.FindOne(context.Background(), bson.M{"_id": id})
 	err := res.Decode(&originalAnswerInfo)
 	if err != nil {
 		log.Println("Decode original info error", err)
 		return nil, err
 	}
 	return &originalAnswerInfo, nil
+}
+
+func GetRandomDecisionInfo(db *mongo.Database, userId string) (*models.MRCValidation, error) {
+	ValidationCollection := db.Collection("MRCValidation")
+	var decisionInfo models.MRCValidation
+	id, _ := primitive.ObjectIDFromHex(userId)
+	res := ValidationCollection.FindOne(context.Background(), bson.M{"status": "unverified", "validationUserId": bson.M{"$ne": id}, "labelUserId": bson.M{"$ne": id}})
+	resErr := res.Decode(&decisionInfo)
+	if resErr != nil {
+		log.Println("Decode decisionInfo error", resErr)
+		return nil, resErr
+	}
+	return &decisionInfo, nil
 }
 
 //================================= sentiment API =================================
