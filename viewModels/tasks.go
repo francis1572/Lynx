@@ -37,6 +37,7 @@ type QAPairModel struct {
 }
 
 type ValidationQAPairModel struct {
+	OriginalId  string `bson:"originalId" json:"originalId"`
 	ArticleId   string `bson:"articleId" json:"articleId"`
 	TaskId      string `bson:"taskId" json:"taskId"`
 	Question    string `bson:"question" json:"question"`

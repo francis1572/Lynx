@@ -380,6 +380,7 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 		return err
 	}
 	var response viewModels.ValidationQAPairModel
+	response.OriginalId = questionPair.Id.Hex()
 	response.Question = questionPair.Question
 	response.ArticleId = questionPair.ArticleId
 	response.TaskId = questionPair.TaskId
@@ -438,7 +439,7 @@ func SaveValidation(database *mongo.Database, w http.ResponseWriter, r *http.Req
 	if res.Answer == queryInfo["validationAnswer"] && queryInfo["startIdx"] == strconv.Itoa(res.StartIdx) {
 		validationStatus.Status = "verified"
 	} else {
-		validationStatus.Status = "unverified"
+		validationStatus.Status = "failed"
 	}
 	log.Println("status info", validationStatus)
 	statusResult, err := service.SaveValidationStatus(database, validationStatus)

@@ -50,17 +50,18 @@ type MRCAnswer struct {
 
 func (a *MRCAnswer) ToQueryBson() bson.M {
 	var queryObject bson.M
-	if reflect.ValueOf("id").IsValid() {
-		// log.Println("a.Id", reflect.TypeOf(a.Id).Kind())
-		log.Println("a.ID", a.Id)
-		// id, err := primitive.ObjectIDFromHex(a.Id)
-		queryObject = bson.M{ "_id": a.Id }
-	} else if a.TaskType == "MRCValidation" {
+	if  a.TaskType == "MRCValidation" {
+		log.Println("validation", a.UserId)
 		queryObject = bson.M{
 			"userId": bson.M{"$ne": a.UserId},
 			"status": "unverified",
-			"taskType":  a.TaskType,
+			"taskType": "MRC",
 		}
+	} else if reflect.ValueOf("id").IsValid() {
+			// log.Println("a.Id", reflect.TypeOf(a.Id).Kind())
+			log.Println("a.ID", a.Id)
+			// id, err := primitive.ObjectIDFromHex(a.Id)
+			queryObject = bson.M{ "_id": a.Id }
 	} else {
 		log.Println("here")
 		queryObject = bson.M{
