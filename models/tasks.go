@@ -2,7 +2,6 @@ package models
 
 import (
 	"log"
-	"reflect"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -57,9 +56,9 @@ func (a *MRCAnswer) ToQueryBson() bson.M {
 			"status": "unverified",
 			"taskType": "MRC",
 		}
-	} else if reflect.ValueOf("id").IsValid() {
+	} else if a.Id.Hex() != "000000000000000000000000" {
 			// log.Println("a.Id", reflect.TypeOf(a.Id).Kind())
-			log.Println("a.ID", a.Id)
+			log.Println("a.ID", a.Id.Hex())
 			// id, err := primitive.ObjectIDFromHex(a.Id)
 			queryObject = bson.M{ "_id": a.Id }
 	} else {
@@ -80,4 +79,12 @@ type MRCValidation struct {
 	OriginalId 		 primitive.ObjectID `bson:"originalId,omitempty" json:"originalId"`
 	ValidationId	 primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
 	Status   		 string `bson:"status" json:"status"`
+}
+
+type MRCDecision struct {
+	UserId				 string `bson:"userId" json:"userId"`
+	OriginalId			 primitive.ObjectID `bson:"originalId,omitempty" json:"originalId"`
+	ValidationId	 	 primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
+	ValidationStatusId	 primitive.ObjectID `bson:"validationStatusId,omitempty" json:"validationStatusId"`
+	DecisionResult 		 string `bson:"decisionResult" json:"decisionResult"`
 }

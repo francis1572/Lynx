@@ -305,7 +305,7 @@ func UpdateValidationStatus(db *mongo.Database, status models.MRCValidation) err
 	ValidationCollection := db.Collection("MRCValidation")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	filter := bson.M{"validationId": bson.M{"$eq": status.OriginalId}}
+	filter := bson.M{"_id": bson.M{"$eq": status.OriginalId}}
 	update := bson.M{"$set": bson.M{"status": status.Status}}
 	res, err := ValidationCollection.UpdateOne(ctx, filter, update)	
 	log.Println("res", res)
@@ -358,13 +358,26 @@ func GetRandomDecisionInfo(db *mongo.Database, userId string) (*models.MRCValida
 	ValidationCollection := db.Collection("MRCValidation")
 	var decisionInfo models.MRCValidation
 	id, _ := primitive.ObjectIDFromHex(userId)
-	res := ValidationCollection.FindOne(context.Background(), bson.M{"status": "unverified", "validationUserId": bson.M{"$ne": id}, "labelUserId": bson.M{"$ne": id}})
+	res := ValidationCollection.FindOne(context.Background(), bson.M{"status": "pending", "validationUserId": bson.M{"$ne": id}, "labelUserId": bson.M{"$ne": id}})
 	resErr := res.Decode(&decisionInfo)
 	if resErr != nil {
 		log.Println("Decode decisionInfo error", resErr)
 		return nil, resErr
 	}
 	return &decisionInfo, nil
+}
+
+func SaveDecision(db *mongo.Database, decisionResult models.MRCDecision) (*mongo.InsertOneResult, error) {
+	log.Println("decision save:", decisionResult)
+	DecisionCollection := db.Collection("MRCDecision")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := DecisionCollection.InsertOne(ctx, decisionResult)
+	if err != nil {
+		log.Println("Insert answers Error", err)
+		return nil, err
+	}
+	return res, nil
 }
 
 //================================= sentiment API =================================

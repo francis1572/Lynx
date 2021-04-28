@@ -374,6 +374,15 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 		return err
 	}
 	questionPair, err := service.GetRandomValidationQuestion(database, models.MRCAnswer{UserId: queryInfo["userId"], TaskType: queryInfo["taskType"]})
+	if questionPair == nil {
+		var response = models.Success{
+			Success: true,
+			Message: "no validation",
+		}
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
 	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: questionPair.ArticleId, TaskId: questionPair.TaskId, TaskType: questionPair.TaskType})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -439,7 +448,7 @@ func SaveValidation(database *mongo.Database, w http.ResponseWriter, r *http.Req
 	if res.Answer == queryInfo["validationAnswer"] && queryInfo["startIdx"] == strconv.Itoa(res.StartIdx) {
 		validationStatus.Status = "verified"
 	} else {
-		validationStatus.Status = "failed"
+		validationStatus.Status = "pending"
 	}
 	log.Println("status info", validationStatus)
 	statusResult, err := service.SaveValidationStatus(database, validationStatus)
@@ -470,6 +479,15 @@ func GetDecision(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	}
 	decisionInfo, err := service.GetRandomDecisionInfo(database, userId)
 	log.Println("decisionInfo", decisionInfo)
+	if decisionInfo == nil {
+		var response = models.Success{
+			Success: true,
+			Message: "no decision",
+		}
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -537,9 +555,19 @@ func SaveDecision(database *mongo.Database, w http.ResponseWriter, r *http.Reque
 		return updateErr
 	}
 
+	// save decision result
+	var decisionResult models.MRCDecision
+	decisionResult.UserId = queryInfo["userId"]
+	decisionResult.OriginalId = originalId
+	validationId, err := primitive.ObjectIDFromHex(queryInfo["validationId"])
+	decisionResult.ValidationId = validationId
+	decisionResult.ValidationStatusId = validationStatusId
+	decisionResult.DecisionResult = queryInfo["decisionResult"]
+	saveDecisionResult, err := service.SaveDecision(database, decisionResult)
+
 	var response = models.Success{
 		Success: true,
-		Message: "Update Successfully!",
+		Message: saveDecisionResult.InsertedID.(primitive.ObjectID).Hex(),
 	}
 	jsondata, _ := json.Marshal(response)
 	w.Write(jsondata)
