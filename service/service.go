@@ -3,14 +3,14 @@ package service
 import (
 	"context"
 	"log"
-	"time"
 	"reflect"
+	"time"
 
 	"Lynx/models"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func GetAuthByProjectId(db *mongo.Database, auth models.Auth) ([]models.Auth, error) {
@@ -370,7 +370,7 @@ func UpdateAnswer(db *mongo.Database, answer models.MRCValidation) (*mongo.Updat
 	defer cancel()
 	filter := bson.M{"_id": bson.M{"$eq": answer.OriginalId}}
 	update := bson.M{"$set": bson.M{"status": answer.Status}}
-	res, err := AnswerCollection.UpdateOne(ctx, filter, update)	
+	res, err := AnswerCollection.UpdateOne(ctx, filter, update)
 	log.Println("res type", reflect.TypeOf(res).Kind())
 	if err != nil {
 		log.Println("update answer error", err)
@@ -385,7 +385,7 @@ func UpdateValidationStatus(db *mongo.Database, status models.MRCValidation) err
 	defer cancel()
 	filter := bson.M{"_id": bson.M{"$eq": status.OriginalId}}
 	update := bson.M{"$set": bson.M{"status": status.Status}}
-	res, err := ValidationCollection.UpdateOne(ctx, filter, update)	
+	res, err := ValidationCollection.UpdateOne(ctx, filter, update)
 	log.Println("res", res)
 	if err != nil {
 		log.Println("update answer error", err)
