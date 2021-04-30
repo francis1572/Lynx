@@ -77,9 +77,22 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/getValidation":
 		log.Println("POST /GetValidation")
 		respond.GetValidation(Database, w, r)
+		return
+	case "/saveValidation":
+		log.Println("POST /SaveValidation")
+		respond.SaveValidation(Database, w, r)
+		return
 	case "/saveSentiAnswer":
 		log.Println("POST /SaveSentiAnswer")
 		respond.SaveSentiAnswer(Database, w, r)
+		return
+	case "/getDecision":
+		log.Println("POST /getRandomDecision")
+		respond.GetDecision(Database, w, r)
+		return
+	case "/saveDecision":
+		log.Println("POST /SaveDecision")
+		respond.SaveDecision(Database, w, r)
 		return
 	case "/test":
 		respond.Test(w, r)

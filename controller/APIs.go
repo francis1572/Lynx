@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	// "reflect"
 
 	"Lynx/models"
 	"Lynx/service"
@@ -373,12 +374,22 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 		return err
 	}
 	questionPair, err := service.GetRandomValidationQuestion(database, models.MRCAnswer{UserId: queryInfo["userId"], TaskType: queryInfo["taskType"]})
+	if questionPair == nil {
+		var response = models.Success{
+			Success: true,
+			Message: "no validation",
+		}
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
 	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: questionPair.ArticleId, TaskId: questionPair.TaskId, TaskType: questionPair.TaskType})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
 	var response viewModels.ValidationQAPairModel
+	response.OriginalId = questionPair.Id.Hex()
 	response.Question = questionPair.Question
 	response.ArticleId = questionPair.ArticleId
 	response.TaskId = questionPair.TaskId
@@ -387,6 +398,180 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 	jsondata, _ := json.Marshal(response)
 	w.Write(jsondata)
 	return nil
+}
+
+func SaveValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	// Decode
+	var queryInfo map[string]string
+	log.Println("originalId", queryInfo["originalId"])
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	log.Println("queryInfo validationAnswer", len(queryInfo["validationAnswer"]))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// find original answer
+	id, err := primitive.ObjectIDFromHex(queryInfo["originalId"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	res, err := service.FindAnswerById(database, id)
+	log.Println("original answer", res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// save validation answer
+	var validationAnswer models.MRCAnswer
+	validationAnswer.UserId = queryInfo["userId"]
+	validationAnswer.ArticleId = res.ArticleId
+	validationAnswer.TaskId = res.TaskId
+	validationAnswer.TaskType = "Validation"
+	validationAnswer.Status = "unverified"
+	validationAnswer.Question = res.Question
+	validationAnswer.Answer = queryInfo["validationAnswer"]
+	startIdx, err := strconv.Atoi(queryInfo["startIdx"])
+	validationAnswer.StartIdx = startIdx
+	result, err := service.SaveAnswer(database, validationAnswer)
+	log.Println("save result", result.InsertedID)
+	validationId := result.InsertedID.(primitive.ObjectID)
+
+	// check validation
+	var validationStatus models.MRCValidation
+	validationStatus.LabelUserId = res.UserId
+	validationStatus.ValidationUserId = queryInfo["userId"]
+	validationStatus.OriginalId = id
+	validationStatus.ValidationId = validationId
+	if res.Answer == queryInfo["validationAnswer"] && queryInfo["startIdx"] == strconv.Itoa(res.StartIdx) {
+		validationStatus.Status = "verified"
+	} else {
+		validationStatus.Status = "pending"
+	}
+	log.Println("status info", validationStatus)
+	statusResult, err := service.SaveValidationStatus(database, validationStatus)
+	log.Println("status result", statusResult)
+
+	// update answer
+	updateResult, err := service.UpdateAnswer(database, validationStatus)
+	log.Println("update result", updateResult)
+
+	// result and response
+	var response = models.Success{
+		Success: true,
+		Message: statusResult.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
+
+func GetDecision(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	var userId = queryInfo["userId"]
+	log.Println("userId", userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	decisionInfo, err := service.GetRandomDecisionInfo(database, userId)
+	log.Println("decisionInfo", decisionInfo)
+	if decisionInfo == nil {
+		var response = models.Success{
+			Success: true,
+			Message: "no decision",
+		}
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}	
+	originalAnswer, err := service.FindAnswerById(database, decisionInfo.OriginalId)
+	log.Println("originalAnswer", originalAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	validationAnswer, err := service.FindAnswerById(database, decisionInfo.ValidationId)
+	log.Println("validationAnswer", validationAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: originalAnswer.ArticleId, TaskId: originalAnswer.TaskId, TaskType: "MRC"})
+	log.Println("task", task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response viewModels.DecisionDataViewModel
+	response.ValidationStatusId = decisionInfo.Id
+	response.OriginalId = originalAnswer.Id
+	response.ValidationId = validationAnswer.Id
+	response.Question = originalAnswer.Question
+	response.OriginalAnswer = originalAnswer.Answer
+	response.OriginalStartIdx = originalAnswer.StartIdx
+	response.ValidationAnswer = validationAnswer.Answer
+	response.ValidationStartIdx = validationAnswer.StartIdx
+	response.OriginalTaskContext = task.Context
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil	
+}
+
+func SaveDecision(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// update answer
+	var decisionStatus models.MRCValidation
+	originalId, err := primitive.ObjectIDFromHex(queryInfo["originalId"])
+	decisionStatus.OriginalId = originalId
+	decisionStatus.Status = queryInfo["status"]
+	updateAnswer, err := service.UpdateAnswer(database, decisionStatus)
+	log.Println("updateAnswer", updateAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// update status
+	var validationStatus models.MRCValidation
+	validationStatusId, err := primitive.ObjectIDFromHex(queryInfo["validationStatusId"])
+	validationStatus.OriginalId = validationStatusId
+	validationStatus.Status = queryInfo["status"]
+	updateErr := service.UpdateValidationStatus(database, validationStatus)
+	if updateErr != nil {
+		http.Error(w, updateErr.Error(), http.StatusBadRequest)
+		return updateErr
+	}
+
+	// save decision result
+	var decisionResult models.MRCDecision
+	decisionResult.UserId = queryInfo["userId"]
+	decisionResult.OriginalId = originalId
+	validationId, err := primitive.ObjectIDFromHex(queryInfo["validationId"])
+	decisionResult.ValidationId = validationId
+	decisionResult.ValidationStatusId = validationStatusId
+	decisionResult.DecisionResult = queryInfo["decisionResult"]
+	saveDecisionResult, err := service.SaveDecision(database, decisionResult)
+
+	var response = models.Success{
+		Success: true,
+		Message: saveDecisionResult.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil	
 }
 
 //================================= sentiment API =================================

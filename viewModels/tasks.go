@@ -1,4 +1,7 @@
 package viewModels
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type TaskListModel struct {
 	TaskId     string `bson:"taskId" json:"taskId"`
@@ -34,6 +37,7 @@ type QAPairModel struct {
 }
 
 type ValidationQAPairModel struct {
+	OriginalId  string `bson:"originalId" json:"originalId"`
 	ArticleId   string `bson:"articleId" json:"articleId"`
 	TaskId      string `bson:"taskId" json:"taskId"`
 	Question    string `bson:"question" json:"question"`
@@ -57,4 +61,23 @@ type SentiTaskViewModel struct {
 	Context    string   `bson:"context" json:"context"`
 	AspectPool []string `bson:"aspectPool" json:"aspectPool"`
 	IsAnswered bool     `bson:"isAnswered" json:"isAnswered"`
+}
+
+type ValidationDataViewModel struct {
+	UserId 			 		 string `bson:"userId" json:"userId"`
+	OriginalId 		   string `bson:"originalId" json:"original"`
+	ValidationAnswer string `bson:"validationAnswer" json:"validationAnswer"`
+	StartIdx 		 		 int `bson:"startIdx" json:"startIdx"`
+}
+
+type DecisionDataViewModel struct {
+	ValidationStatusId  primitive.ObjectID `bson:"validationStatusId" json:"validationStatusId"`
+	OriginalId 			 		primitive.ObjectID `bson:"originalId,omitempty" json:"original"`
+	ValidationId 		 		primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
+	Question 				 		string `bson:"question" json:"question"`
+	OriginalAnswer 	 		string `bson:"originalAnswer" json:"originalAnswer"`
+	OriginalStartIdx 		int `bson:"originalStartIdx" json:"originalStart"`
+	ValidationAnswer 		string `bson:"validationAnswer" json:"validationAnswer"`
+	ValidationStartIdx  int `bson:"validationStartIdx" json:"validationStartIdx"`
+	OriginalTaskContext string `bson:"originalTaskContext" json:"originalTaskContext"`
 }

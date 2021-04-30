@@ -4,11 +4,13 @@ import (
 	"context"
 	"log"
 	"time"
+	"reflect"
 
 	"Lynx/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetAuthByProjectId(db *mongo.Database, auth models.Auth) ([]models.Auth, error) {
@@ -284,6 +286,49 @@ func SaveAnswer(db *mongo.Database, answer models.MRCAnswer) (*mongo.InsertOneRe
 	return res, nil
 }
 
+func UpdateAnswer(db *mongo.Database, answer models.MRCValidation) (*mongo.UpdateResult, error) {
+	AnswerCollection := db.Collection("MRCAnswer")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	filter := bson.M{"_id": bson.M{"$eq": answer.OriginalId}}
+	update := bson.M{"$set": bson.M{"status": answer.Status}}
+	res, err := AnswerCollection.UpdateOne(ctx, filter, update)	
+	log.Println("res type", reflect.TypeOf(res).Kind())
+	if err != nil {
+		log.Println("update answer error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func UpdateValidationStatus(db *mongo.Database, status models.MRCValidation) error {
+	ValidationCollection := db.Collection("MRCValidation")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	filter := bson.M{"_id": bson.M{"$eq": status.OriginalId}}
+	update := bson.M{"$set": bson.M{"status": status.Status}}
+	res, err := ValidationCollection.UpdateOne(ctx, filter, update)	
+	log.Println("res", res)
+	if err != nil {
+		log.Println("update answer error", err)
+		return err
+	}
+	return nil
+}
+
+func SaveValidationStatus(db *mongo.Database, validationAnswer models.MRCValidation) (*mongo.InsertOneResult, error) {
+	log.Println("validation answer save:", validationAnswer)
+	ValidationCollection := db.Collection("MRCValidation")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := ValidationCollection.InsertOne(ctx, validationAnswer)
+	if err != nil {
+		log.Println("Insert answers Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
 func GetRandomValidationQuestion(db *mongo.Database, question models.MRCAnswer) (*models.MRCAnswer, error) {
 	AnswerCollection := db.Collection("MRCAnswer")
 	var questionPair models.MRCAnswer
@@ -294,6 +339,45 @@ func GetRandomValidationQuestion(db *mongo.Database, question models.MRCAnswer) 
 		return nil, err
 	}
 	return &questionPair, nil
+}
+
+func FindAnswerById(db *mongo.Database, id primitive.ObjectID) (*models.MRCAnswer, error) {
+	AnswerCollection := db.Collection("MRCAnswer")
+	var originalAnswerInfo models.MRCAnswer
+	log.Println("Find original", id)
+	res := AnswerCollection.FindOne(context.Background(), bson.M{"_id": id})
+	err := res.Decode(&originalAnswerInfo)
+	if err != nil {
+		log.Println("Decode original info error", err)
+		return nil, err
+	}
+	return &originalAnswerInfo, nil
+}
+
+func GetRandomDecisionInfo(db *mongo.Database, userId string) (*models.MRCValidation, error) {
+	ValidationCollection := db.Collection("MRCValidation")
+	var decisionInfo models.MRCValidation
+	id, _ := primitive.ObjectIDFromHex(userId)
+	res := ValidationCollection.FindOne(context.Background(), bson.M{"status": "pending", "validationUserId": bson.M{"$ne": id}, "labelUserId": bson.M{"$ne": id}})
+	resErr := res.Decode(&decisionInfo)
+	if resErr != nil {
+		log.Println("Decode decisionInfo error", resErr)
+		return nil, resErr
+	}
+	return &decisionInfo, nil
+}
+
+func SaveDecision(db *mongo.Database, decisionResult models.MRCDecision) (*mongo.InsertOneResult, error) {
+	log.Println("decision save:", decisionResult)
+	DecisionCollection := db.Collection("MRCDecision")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := DecisionCollection.InsertOne(ctx, decisionResult)
+	if err != nil {
+		log.Println("Insert answers Error", err)
+		return nil, err
+	}
+	return res, nil
 }
 
 //================================= sentiment API =================================
