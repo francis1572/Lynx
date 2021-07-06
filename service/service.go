@@ -3,14 +3,14 @@ package service
 import (
 	"context"
 	"log"
-	"time"
 	"reflect"
+	"time"
 
 	"Lynx/models"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func GetAuthByProjectId(db *mongo.Database, auth models.Auth) ([]models.Auth, error) {
@@ -77,33 +77,86 @@ func SaveAuth(db *mongo.Database, auth models.Auth) (*mongo.InsertOneResult, err
 	return res, nil
 }
 
-func GetProjects(db *mongo.Database, userId string) ([]models.Project, error) {
-	collection := db.Collection("Project")
-	var serviceResult = []models.Project{}
-	cur, err := collection.Find(context.Background(), bson.M{"manager": userId})
+func SaveAuths(db *mongo.Database, auths []models.Auth) (*mongo.InsertManyResult, error) {
+	AuthCollection := db.Collection("Authentication")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// to insert into db, need to convert struct to interface{}
+	insertDatas := make([]interface{}, len(auths))
+	for i, a := range auths {
+		insertDatas[i] = a
+	}
+	res, err := AuthCollection.InsertMany(ctx, insertDatas)
 	if err != nil {
-		log.Println("Find Project Error", err)
+		log.Println("Insert auth Error", err)
 		return nil, err
 	}
-	for cur.Next(context.Background()) {
-		result := models.Project{}
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Println("Decode Project Error", err)
-			return nil, err
-		}
-		serviceResult = append(serviceResult, result)
-	}
-	return serviceResult, nil
+	return res, nil
 }
+
+// save project articles
+func SaveArticles(db *mongo.Database, articles []models.Article) (*mongo.InsertManyResult, error) {
+	ArticleCollection := db.Collection("Articles")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// to insert into db, need to convert struct to interface{}
+	insertDatas := make([]interface{}, len(articles))
+	for i, a := range articles {
+		insertDatas[i] = a
+	}
+	res, err := ArticleCollection.InsertMany(ctx, insertDatas)
+	if err != nil {
+		log.Println("Insert auth Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func SaveTasks(db *mongo.Database, tasks []models.MRCTask) (*mongo.InsertManyResult, error) {
+	TaskCollection := db.Collection("MRCTask")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// to insert into db, need to convert struct to interface{}
+	insertDatas := make([]interface{}, len(tasks))
+	for i, a := range tasks {
+		insertDatas[i] = a
+	}
+	res, err := TaskCollection.InsertMany(ctx, insertDatas)
+	if err != nil {
+		log.Println("Insert auth Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+// func GetProjects(db *mongo.Database, userId string) ([]models.Project, error) {
+// 	collection := db.Collection("Project")
+// 	var serviceResult = []models.Project{}
+// 	cur, err := collection.Find(context.Background(), bson.M{"manager": userId})
+// 	if err != nil {
+// 		log.Println("Find Project Error", err)
+// 		return nil, err
+// 	}
+// 	for cur.Next(context.Background()) {
+// 		result := models.Project{}
+// 		err := cur.Decode(&result)
+// 		if err != nil {
+// 			log.Println("Decode Project Error", err)
+// 			return nil, err
+// 		}
+// 		serviceResult = append(serviceResult, result)
+// 	}
+// 	return serviceResult, nil
+// }
 
 func GetProjectByProjectId(db *mongo.Database, project models.Project) (*models.Project, error) {
 	collection := db.Collection("Project")
 	var serviceResult = models.Project{}
+	log.Println(project)
 	cur := collection.FindOne(context.Background(), project.ToQueryBson())
 	// if no project then return nil
 	if cur.Err() != nil {
-		log.Println("Can't find project in DB")
+		log.Println("Can't find project in DB", cur.Err())
 		return nil, cur.Err()
 	}
 	// if has project then return
@@ -116,10 +169,35 @@ func GetProjectByProjectId(db *mongo.Database, project models.Project) (*models.
 	return &serviceResult, nil
 }
 
+func GetProjectCount(db *mongo.Database) (int64, error) {
+	ProjectCollection := db.Collection("Project")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	itemCount, err := ProjectCollection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		log.Println("Insert project Error", err)
+		return 0, err
+	}
+	return itemCount, nil
+}
+
+func SaveProject(db *mongo.Database, project models.Project) (*mongo.InsertOneResult, error) {
+	ProjectCollection := db.Collection(project.TableName())
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := ProjectCollection.InsertOne(ctx, project)
+	if err != nil {
+		log.Println("Insert project Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
 func GetUsersByIds(db *mongo.Database, userIds []string) ([]models.User, error) {
 	collection := db.Collection("GUser")
 	var serviceResult = []models.User{}
 	log.Println("userIds", userIds)
+	// batch query from userIds
 	cur, err := collection.Find(context.Background(), bson.M{"userId": bson.M{"$in": userIds}})
 	if err != nil {
 		log.Println("Find Users Error", err)
@@ -189,10 +267,10 @@ func SaveUser(db *mongo.Database, user models.User) (*mongo.InsertOneResult, err
 	return res, nil
 }
 
-func GetArticles(db *mongo.Database) ([]models.Article, error) {
+func GetArticlesByProjectId(db *mongo.Database, projectId int) ([]models.Article, error) {
 	collection := db.Collection("Articles")
 	var articles = []models.Article{}
-	cur, err := collection.Find(context.Background(), bson.M{})
+	cur, err := collection.Find(context.Background(), bson.M{"projectId": projectId})
 	if err != nil {
 		log.Println("Find Articles Error", err)
 		return nil, err
@@ -292,7 +370,7 @@ func UpdateAnswer(db *mongo.Database, answer models.MRCValidation) (*mongo.Updat
 	defer cancel()
 	filter := bson.M{"_id": bson.M{"$eq": answer.OriginalId}}
 	update := bson.M{"$set": bson.M{"status": answer.Status}}
-	res, err := AnswerCollection.UpdateOne(ctx, filter, update)	
+	res, err := AnswerCollection.UpdateOne(ctx, filter, update)
 	log.Println("res type", reflect.TypeOf(res).Kind())
 	if err != nil {
 		log.Println("update answer error", err)
@@ -307,7 +385,7 @@ func UpdateValidationStatus(db *mongo.Database, status models.MRCValidation) err
 	defer cancel()
 	filter := bson.M{"_id": bson.M{"$eq": status.OriginalId}}
 	update := bson.M{"$set": bson.M{"status": status.Status}}
-	res, err := ValidationCollection.UpdateOne(ctx, filter, update)	
+	res, err := ValidationCollection.UpdateOne(ctx, filter, update)
 	log.Println("res", res)
 	if err != nil {
 		log.Println("update answer error", err)

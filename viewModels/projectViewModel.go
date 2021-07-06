@@ -21,3 +21,8 @@ type ProjectManageViewModel struct {
 	Email      string `bson:"email" json:"email"`
 	ImageUrl   string `bson:"imageUrl" json:"imageUrl"`
 }
+type AddProjectViewModel struct {
+	Project models.Project `bson:"project" json:"project"`
+	Members []models.Auth  `bson:"members" json:"members"`
+	CsvFile [][]string     `bson:"csvFile" json:"csvFile"`
+}

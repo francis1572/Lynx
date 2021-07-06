@@ -44,6 +44,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/saveAuth":
 		respond.SaveAuth(Database, w, r)
 		return
+	case "/saveProject":
+		respond.SaveProject(Database, w, r)
+		return
 	case "/projects":
 		respond.GetProjects(Database, w, r)
 		return
