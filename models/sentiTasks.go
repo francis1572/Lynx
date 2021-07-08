@@ -48,10 +48,18 @@ func (t *SentiSentiment) TableName() string {
 }
 
 func (a *SentiSentiment) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"taskId":   a.TaskId,
-		"aspectId": a.AspectId,
+	var queryObject bson.M
+	if a.AspectId != "" {
+		queryObject = bson.M{
+			"taskId":   a.TaskId,
+			"aspectId": a.AspectId,
+		}
+	} else {
+		queryObject = bson.M{
+			"taskId": a.TaskId,
+		}
 	}
+
 	return queryObject
 }
 
