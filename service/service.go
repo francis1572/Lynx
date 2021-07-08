@@ -410,23 +410,27 @@ func SaveSentiAnswer(db *mongo.Database, answer models.SentiAnswer) (*mongo.Inse
 	return res, nil
 }
 
-//這邊要等到 validation 的時候才會用到
-// func GetSentiAnswer(db *mongo.Database, task models.MRCAnswer) ([]*models.MRCAnswer, error) {
-// 	AnswerCollection := db.Collection("MRCAnswer")
-// 	var answers []*models.MRCAnswer
-// 	cur, err := AnswerCollection.Find(context.Background(), task.ToQueryBson())
-// 	if err != nil {
-// 		log.Println("Find answers Error", err)
-// 		return nil, err
-// 	}
-// 	for cur.Next(context.Background()) {
-// 		result := models.MRCAnswer{}
-// 		err := cur.Decode(&result)
-// 		if err != nil {
-// 			log.Println("Decode answer Error", err)
-// 			return nil, err
-// 		}
-// 		answers = append(answers, &result)
-// 	}
-// 	return answers, nil
-// }
+// 這邊要等到 validation 的時候才會用到
+func GetSentiAnswer(db *mongo.Database, ansQuery models.SentiSentiment) ([]*models.SentiSentiment, error) {
+	SentiCollection := db.Collection("SentiSentiment")
+
+	var sentiList []*models.SentiSentiment
+	log.Println("ansQuery.ToQueryBson()", ansQuery.ToQueryBson())
+	cur, err := SentiCollection.Find(context.Background(), ansQuery.ToQueryBson())
+	if err != nil {
+		log.Println("Find answers Error", err)
+		return nil, err
+	}
+
+	for cur.Next(context.Background()) {
+		result := models.SentiSentiment{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode answer Error", err)
+			return nil, err
+		}
+		sentiList = append(sentiList, &result)
+	}
+
+	return sentiList, nil
+}

@@ -511,7 +511,7 @@ func SaveSentiAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Re
 	var requestBody models.SentiAnswer
 
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
-	// log.Println(requestBody.Aspect)
+	// log.Println(requestBody)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -536,43 +536,47 @@ func SaveSentiAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Re
 
 // validation 才會用到的
 
-// func GetSentiTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-// 	var requestBody map[string]string
-// 	err := json.NewDecoder(r.Body).Decode(&requestBody)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return err
-// 	}
-// 	log.Println("GetSentiTaskById queryInfo:", requestBody)
+func PostSentiValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.SentiAnswer
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody.Aspect)
 
-// 	aspects, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: requestBody["taskId"]})
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return err
-// 	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
 
-// 	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return err
-// 	}
-// 	var response viewModels.TaskViewModel
-// 	// var response viewModels.SentiTasksViewModel
-// 	response.TaskId = task.TaskId
-// 	response.TaskType = task.TaskType
-// 	response.TaskTitle = task.TaskTitle
-// 	response.Answered = task.Answered
-// 	response.Context = task.Context
+	log.Println("GetSentiAnsById queryInfo:", requestBody)
 
-// 	for _, answer := range answers {
-// 		var QAPair = viewModels.QAPairModel{
-// 			Question: answer.Question,
-// 			Answer:   answer.Answer,
-// 		}
-// 		response.QAPairs = append(response.QAPairs, QAPair)
-// 	}
+	sentiVal := requestBody.Sentiment
+	sentiList, err := service.GetSentiAnswer(database, models.SentiSentiment{TaskId: sentiVal[0].TaskId})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// log.Println("sentiList:", sentiList)
+	allMatch := 1
+	for _, sentiValItem := range sentiVal {
+		isMatch := 0
+		for _, sentiListItem := range sentiList {
+			if (sentiValItem.AspectId == sentiListItem.AspectId) && (sentiValItem.Sentiment == sentiValItem.Sentiment) && (sentiValItem.Dir == sentiListItem.Dir) && (sentiValItem.Offset == sentiListItem.Offset) {
+				isMatch = 1
+			}
+		}
+		if isMatch == 0 {
+			allMatch = 0
+			break
+		}
+	}
+	if allMatch == 1 {
+		log.Println("successful validation")
 
-// 	jsondata, _ := json.Marshal(response)
-// 	_, _ = w.Write(jsondata)
-// 	return nil
-// }
+	} else {
+		log.Println("failed validation")
+	}
+
+	jsondata, _ := json.Marshal(allMatch)
+	_, _ = w.Write(jsondata)
+
+	return err
+}
