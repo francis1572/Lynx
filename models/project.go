@@ -9,7 +9,6 @@ type Project struct {
 	ProjectName string `bson:"projectName" json:"projectName"`
 	ProjectType string `bson:"projectType" json:"projectType"`
 	LabelInfo   string `bson:"labelInfo" json:"labelInfo"`
-	Manager     string `bson:"manager" json:"manager"`
 }
 
 func (p *Project) TableName() string {
@@ -18,7 +17,7 @@ func (p *Project) TableName() string {
 
 func (p *Project) ToQueryBson() bson.M {
 	var queryObject bson.M
-	if p.ProjectId != 0 {
+	if p.ProjectId != -1 {
 		queryObject = bson.M{
 			"projectId": p.ProjectId,
 		}

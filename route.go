@@ -44,6 +44,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/saveAuth":
 		respond.SaveAuth(Database, w, r)
 		return
+	case "/saveProject":
+		respond.SaveProject(Database, w, r)
+		return
 	case "/projects":
 		respond.GetProjects(Database, w, r)
 		return
@@ -89,6 +92,14 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/saveSentiAnswer":
 		log.Println("POST /SaveSentiAnswer")
 		respond.SaveSentiAnswer(Database, w, r)
+		return
+	case "/getDecision":
+		log.Println("POST /getRandomDecision")
+		respond.GetDecision(Database, w, r)
+		return
+	case "/saveDecision":
+		log.Println("POST /SaveDecision")
+		respond.SaveDecision(Database, w, r)
 		return
 	case "/test":
 		respond.Test(w, r)

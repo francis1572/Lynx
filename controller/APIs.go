@@ -3,9 +3,11 @@ package respond
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"Lynx/models"
 	"Lynx/service"
@@ -126,6 +128,105 @@ func SaveAuth(database *mongo.Database, w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
+func SaveProject(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var addProjModel = viewModels.AddProjectViewModel{}
+	err := json.NewDecoder(r.Body).Decode(&addProjModel)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// assign new projectId to each member's authentication
+	currentId, err := service.GetProjectCount(database)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// check if csv format decode is correct first
+	articles, tasks, err := convertToArticlesAndTasks(addProjModel.CsvFile, int(currentId))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// then adding objects into db
+	addProjModel.Project.ProjectId = int(currentId)
+	projectResult, err := service.SaveProject(database, addProjModel.Project)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	for i := range addProjModel.Members {
+		addProjModel.Members[i].ProjectId = int(currentId)
+	}
+	log.Println("addProj members", addProjModel.Members)
+	_, err = service.SaveAuths(database, addProjModel.Members)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	_, err = service.SaveArticles(database, articles)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	_, err = service.SaveTasks(database, tasks)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response = models.Success{
+		Success: true,
+		Message: projectResult.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+// private func for decode articles and Tasks.
+func convertToArticlesAndTasks(csvFile [][]string, currentId int) ([]models.Article, []models.MRCTask, error) {
+	var articles []models.Article
+	var tasks []models.MRCTask
+	articleSets := make(map[string]int)
+	var ai int = -1 //point index of articles
+	for _, pair := range csvFile {
+		var contexts = pair[0]
+		var indices = strings.Split(pair[1], "-")
+		var articleId = "articleId" + indices[0]
+		var taskId = "taskId" + pair[1]
+		// basic check for the csv format
+		if len(pair) != 2 || len(indices) != 2 {
+			log.Println("錯誤的CSV檔案格式")
+			return nil, nil, errors.New("錯誤的CSV檔案格式")
+		}
+		// check if the articles already exist else create one
+		if _, ok := articleSets[articleId]; ok {
+			articles[ai].TotalTasks += 1
+		} else {
+			articleSets[articleId] = 1
+			var article = models.Article{
+				ArticleId:    articleId,
+				ProjectId:    currentId,
+				ArticleTitle: contexts,
+				TotalTasks:   1,
+			}
+			articles = append(articles, article)
+			ai += 1
+		}
+		var task = models.MRCTask{
+			TaskId:    taskId,
+			ArticleId: articleId,
+			TaskType:  "MRC",
+			TaskTitle: contexts,
+			Context:   contexts,
+		}
+		tasks = append(tasks, task)
+	}
+	return articles, tasks, nil
+}
+
 func GetUsers(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	users, err := service.GetUsers(database)
 	if err != nil {
@@ -141,7 +242,8 @@ func GetProjects(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	var queryInfo map[string]string
 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
 	var userId = queryInfo["userId"]
-	var queryAuth = models.Auth{UserId: userId, StatusCode: "1"}
+	var statusCode = queryInfo["statusCode"]
+	var queryAuth = models.Auth{UserId: userId, StatusCode: statusCode}
 	log.Println(userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -169,14 +271,14 @@ func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-
-	var queryProject = models.Project{ProjectId: 1}
+	projectId, _ := strconv.Atoi(queryInfo["projectId"])
+	var queryProject = models.Project{ProjectId: projectId}
 	projectResult, err := service.GetProjectByProjectId(database, queryProject)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	articles, err = service.GetArticles(database)
+	articles, err = service.GetArticlesByProjectId(database, projectId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -373,17 +475,201 @@ func GetValidation(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 		return err
 	}
 	questionPair, err := service.GetRandomValidationQuestion(database, models.MRCAnswer{UserId: queryInfo["userId"], TaskType: queryInfo["taskType"]})
+	if questionPair == nil {
+		var response = models.Success{
+			Success: true,
+			Message: "no validation",
+		}
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
 	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: questionPair.ArticleId, TaskId: questionPair.TaskId, TaskType: questionPair.TaskType})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
 	var response viewModels.ValidationQAPairModel
+	response.OriginalId = questionPair.Id.Hex()
 	response.Question = questionPair.Question
 	response.ArticleId = questionPair.ArticleId
 	response.TaskId = questionPair.TaskId
 	response.TaskTitle = task.TaskTitle
 	response.TaskContext = task.Context
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
+
+func SaveValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	// Decode
+	var queryInfo map[string]string
+	log.Println("originalId", queryInfo["originalId"])
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	log.Println("queryInfo validationAnswer", len(queryInfo["validationAnswer"]))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// find original answer
+	id, err := primitive.ObjectIDFromHex(queryInfo["originalId"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	res, err := service.FindAnswerById(database, id)
+	log.Println("original answer", res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// save validation answer
+	var validationAnswer models.MRCAnswer
+	validationAnswer.UserId = queryInfo["userId"]
+	validationAnswer.ArticleId = res.ArticleId
+	validationAnswer.TaskId = res.TaskId
+	validationAnswer.TaskType = "Validation"
+	validationAnswer.Status = "unverified"
+	validationAnswer.Question = res.Question
+	validationAnswer.Answer = queryInfo["validationAnswer"]
+	startIdx, err := strconv.Atoi(queryInfo["startIdx"])
+	validationAnswer.StartIdx = startIdx
+	result, err := service.SaveAnswer(database, validationAnswer)
+	log.Println("save result", result.InsertedID)
+	validationId := result.InsertedID.(primitive.ObjectID)
+
+	// check validation
+	var validationStatus models.MRCValidation
+	validationStatus.LabelUserId = res.UserId
+	validationStatus.ValidationUserId = queryInfo["userId"]
+	validationStatus.OriginalId = id
+	validationStatus.ValidationId = validationId
+	if res.Answer == queryInfo["validationAnswer"] && queryInfo["startIdx"] == strconv.Itoa(res.StartIdx) {
+		validationStatus.Status = "verified"
+	} else {
+		validationStatus.Status = "pending"
+	}
+	log.Println("status info", validationStatus)
+	statusResult, err := service.SaveValidationStatus(database, validationStatus)
+	log.Println("status result", statusResult)
+
+	// update answer
+	updateResult, err := service.UpdateAnswer(database, validationStatus)
+	log.Println("update result", updateResult)
+
+	// result and response
+	var response = models.Success{
+		Success: true,
+		Message: statusResult.InsertedID.(primitive.ObjectID).Hex(),
+	}
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
+
+func GetDecision(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	var userId = queryInfo["userId"]
+	log.Println("userId", userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	decisionInfo, err := service.GetRandomDecisionInfo(database, userId)
+	log.Println("decisionInfo", decisionInfo)
+	if decisionInfo == nil {
+		var response = models.Success{
+			Success: true,
+			Message: "no decision",
+		}
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	originalAnswer, err := service.FindAnswerById(database, decisionInfo.OriginalId)
+	log.Println("originalAnswer", originalAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	validationAnswer, err := service.FindAnswerById(database, decisionInfo.ValidationId)
+	log.Println("validationAnswer", validationAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	task, err := service.GetTaskById(database, models.MRCTask{ArticleId: originalAnswer.ArticleId, TaskId: originalAnswer.TaskId, TaskType: "MRC"})
+	log.Println("task", task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response viewModels.DecisionDataViewModel
+	response.ValidationStatusId = decisionInfo.Id
+	response.OriginalId = originalAnswer.Id
+	response.ValidationId = validationAnswer.Id
+	response.Question = originalAnswer.Question
+	response.OriginalAnswer = originalAnswer.Answer
+	response.OriginalStartIdx = originalAnswer.StartIdx
+	response.ValidationAnswer = validationAnswer.Answer
+	response.ValidationStartIdx = validationAnswer.StartIdx
+	response.OriginalTaskContext = task.Context
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
+
+func SaveDecision(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo map[string]string
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// update answer
+	var decisionStatus models.MRCValidation
+	originalId, err := primitive.ObjectIDFromHex(queryInfo["originalId"])
+	decisionStatus.OriginalId = originalId
+	decisionStatus.Status = queryInfo["status"]
+	updateAnswer, err := service.UpdateAnswer(database, decisionStatus)
+	log.Println("updateAnswer", updateAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	// update status
+	var validationStatus models.MRCValidation
+	validationStatusId, err := primitive.ObjectIDFromHex(queryInfo["validationStatusId"])
+	validationStatus.OriginalId = validationStatusId
+	validationStatus.Status = queryInfo["status"]
+	updateErr := service.UpdateValidationStatus(database, validationStatus)
+	if updateErr != nil {
+		http.Error(w, updateErr.Error(), http.StatusBadRequest)
+		return updateErr
+	}
+
+	// save decision result
+	var decisionResult models.MRCDecision
+	decisionResult.UserId = queryInfo["userId"]
+	decisionResult.OriginalId = originalId
+	validationId, err := primitive.ObjectIDFromHex(queryInfo["validationId"])
+	decisionResult.ValidationId = validationId
+	decisionResult.ValidationStatusId = validationStatusId
+	decisionResult.DecisionResult = queryInfo["decisionResult"]
+	saveDecisionResult, err := service.SaveDecision(database, decisionResult)
+
+	var response = models.Success{
+		Success: true,
+		Message: saveDecisionResult.InsertedID.(primitive.ObjectID).Hex(),
+	}
 	jsondata, _ := json.Marshal(response)
 	w.Write(jsondata)
 	return nil

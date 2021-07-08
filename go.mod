@@ -12,4 +12,5 @@ require (
 	github.com/rs/cors v1.7.0
 	go.mongodb.org/mongo-driver v1.4.6
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
+	gorm.io/gorm v1.21.8
 )
