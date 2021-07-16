@@ -92,8 +92,11 @@ func (a *SentiAspect) ToQueryBson() bson.M {
 // 	IsValidate bool          `bson:"isValidate" json:"isValidate"`
 // }
 type SentiAnswer struct {
+	Task      SentiTask        `bson:"task" json:"task"`
 	Aspect    []SentiAspect    `bson:"aspect" json:"aspect"`
-	Sentiment []SentiSentiment `bson:"sentimentt" json:"sentiment"`
+	Sentiment []SentiSentiment `bson:"sentiment" json:"sentiment"`
+	State     string           `bson:"state" json:"state"`
+	ProjectId string           `bson:"projectId" json:"projectId"`
 }
 
 // func (a *SentiAnswer) ToQueryBson() bson.M {

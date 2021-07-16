@@ -459,10 +459,10 @@ func SaveDecision(db *mongo.Database, decisionResult models.MRCDecision) (*mongo
 }
 
 //================================= sentiment API =================================
-func GetSentiArticles(db *mongo.Database) ([]models.Article, error) {
+func GetSentiArticles(db *mongo.Database, query models.Project) ([]models.Article, error) {
 	collection := db.Collection("SentiArticles")
 	var articles = []models.Article{}
-	cur, err := collection.Find(context.Background(), bson.M{})
+	cur, err := collection.Find(context.Background(), bson.M{"projectId": query.ProjectId, "isAnswered": true})
 	if err != nil {
 		log.Println("Find Articles Error", err)
 		return nil, err
@@ -595,4 +595,90 @@ func GetSentiAnswer(db *mongo.Database, ansQuery models.SentiSentiment) ([]*mode
 	}
 
 	return sentiList, nil
+}
+
+func SaveFinalAnswer(db *mongo.Database, answer models.SentiAnswer) (*mongo.InsertOneResult, error) {
+	FinalCollection := db.Collection("SentiFinalAnswer")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := FinalCollection.InsertOne(ctx, answer)
+	if err != nil {
+		log.Println("Insert aspects Error", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+func CheckIsAnswered(db *mongo.Database, query models.SentiTask) (bool, error) {
+	TaskCollection := db.Collection("SentiTask")
+	ArticleCollection := db.Collection("SentiArticles")
+	var isCompleted = true
+	cur, err := TaskCollection.Find(context.Background(), bson.M{"articleId": query.ArticleId})
+	if err != nil {
+		log.Println("Find tasks Error", err)
+		return false, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.SentiTask{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode tasks Error", err)
+			return false, err
+		}
+		if result.IsAnswered == false {
+			isCompleted = false
+		}
+
+	}
+	log.Println("isCompleted : ", isCompleted)
+	if isCompleted == true {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		filter := bson.M{"articleId": query.ArticleId}
+		update := bson.M{"$set": bson.M{"isAnswered": true}}
+		_, err := ArticleCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			log.Println("Insert comment Error", err)
+			return isCompleted, err
+		}
+	}
+	return isCompleted, nil
+}
+func CheckIsValidated(db *mongo.Database, query models.SentiTask) (bool, error) {
+	TaskCollection := db.Collection("SentiTask")
+	ArticleCollection := db.Collection("SentiArticles")
+	var isCompleted = true
+	cur, err := TaskCollection.Find(context.Background(), bson.M{"articleId": query.ArticleId})
+	if err != nil {
+		log.Println("Find tasks Error", err)
+		return false, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.SentiTask{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode tasks Error", err)
+			return false, err
+		}
+		if result.IsValidate == false {
+			isCompleted = false
+		}
+
+	}
+	log.Println("isCompleted : ", isCompleted)
+	if isCompleted == true {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		filter := bson.M{"articleId": query.ArticleId}
+		update := bson.M{"$set": bson.M{"isValidated": true}}
+		_, err := ArticleCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			log.Println("Insert comment Error", err)
+			return isCompleted, err
+		}
+	}
+	return isCompleted, nil
 }

@@ -679,19 +679,37 @@ func SaveDecision(database *mongo.Database, w http.ResponseWriter, r *http.Reque
 func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var queryInfo map[string]string
 	var articles []models.Article
+	var result viewModels.ProjectViewModel
 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
-	var userId = queryInfo["userId"]
-	log.Println(userId)
+	// var userId = queryInfo["userId"]
+	// log.Println(userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	articles, err = service.GetSentiArticles(database)
+
+	projectId, _ := strconv.Atoi(queryInfo["projectId"])
+
+	var queryProject = models.Project{ProjectId: projectId}
+	// log.Print(queryProject)
+	projectResult, err := service.GetProjectByProjectId(database, queryProject)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	jsondata, _ := json.Marshal(articles)
+	articles, err = service.GetSentiArticles(database, queryProject)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	result.ProjectId = projectResult.ProjectId
+	result.ProjectName = projectResult.ProjectName
+	result.ProjectType = projectResult.ProjectType
+	result.LabelInfo = projectResult.LabelInfo
+	result.ArticleList = articles
+
+	jsondata, _ := json.Marshal(result)
 	w.Write(jsondata)
 	return nil
 }
@@ -824,6 +842,7 @@ func SaveSentiAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Re
 
 func PostSentiValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var requestBody models.SentiAnswer
+	var finalAnswer models.SentiAnswer
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	// log.Println(requestBody.Aspect)
 
@@ -844,7 +863,10 @@ func PostSentiValidation(database *mongo.Database, w http.ResponseWriter, r *htt
 	allMatch := 1
 	for _, sentiValItem := range sentiVal {
 		isMatch := 0
+		// log.Println("sentiVal:", sentiValItem)
 		for _, sentiListItem := range sentiList {
+
+			// log.Println("sentiList:", sentiListItem)
 			if (sentiValItem.AspectId == sentiListItem.AspectId) && (sentiValItem.Sentiment == sentiValItem.Sentiment) && (sentiValItem.Dir == sentiListItem.Dir) && (sentiValItem.Offset == sentiListItem.Offset) {
 				isMatch = 1
 			}
@@ -854,15 +876,72 @@ func PostSentiValidation(database *mongo.Database, w http.ResponseWriter, r *htt
 			break
 		}
 	}
+	finalAnswer.Task = requestBody.Task
+	finalAnswer.Aspect = requestBody.Aspect
+	finalAnswer.Sentiment = requestBody.Sentiment
+	finalAnswer.ProjectId = requestBody.ProjectId
+
 	if allMatch == 1 {
 		log.Println("successful validation")
+		finalAnswer.State = "All Match"
 
 	} else {
 		log.Println("failed validation")
+		finalAnswer.State = "Not Match"
+	}
+
+	_, err = service.SaveFinalAnswer(database, finalAnswer)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
 	}
 
 	jsondata, _ := json.Marshal(allMatch)
 	_, _ = w.Write(jsondata)
 
 	return err
+}
+
+func CheckIsAnswered(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.SentiTask
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	cnt, err := service.CheckIsAnswered(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	jsondata, _ := json.Marshal(cnt)
+	_, _ = w.Write(jsondata)
+
+	return nil
+}
+
+func CheckIsValidated(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.SentiTask
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	cnt, err := service.CheckIsValidated(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	jsondata, _ := json.Marshal(cnt)
+	_, _ = w.Write(jsondata)
+
+	return nil
 }
