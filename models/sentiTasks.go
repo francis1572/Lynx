@@ -11,6 +11,7 @@ type SentiTask struct {
 	TaskTitle  string   `bson:"taskTitle" json:"taskTitle"`
 	Context    string   `bson:"context" json:"context"`
 	TaskType   string   `bson:"taskType" json:"taskType"`
+	ProjectId  int      `bson:"projectId" json:"projectId"`
 	IsAnswered bool     `bson:"isAnswered" json:"isAnswered"`
 	IsValidate bool     `bson:"isValidate" json:"isValidate"`
 }

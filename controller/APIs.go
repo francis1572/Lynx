@@ -945,3 +945,64 @@ func CheckIsValidated(database *mongo.Database, w http.ResponseWriter, r *http.R
 
 	return nil
 }
+
+func GetSentiValidation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo models.SentiTask
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	task, err := service.GetRandomSentiTask(database, models.SentiTask{TaskType: queryInfo.TaskType, ProjectId: queryInfo.ProjectId})
+	if task == nil {
+		var response = models.Success{
+			Success: true,
+			Message: "no validation",
+		}
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
+
+	aspects, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: task.TaskId})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	var response viewModels.SentiTaskViewModel
+	response.TaskId = task.TaskId
+	response.TaskType = task.TaskType
+	response.TaskTitle = task.TaskTitle
+	response.Context = task.Context
+	response.AspectPool = task.AspectPool
+	if len(aspects) != 0 {
+		response.IsAnswered = true
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func DiscardSentiAnswer(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.SentiTask
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	cnt, err := service.DiscardSentiAnswer(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	jsondata, _ := json.Marshal(cnt)
+	_, _ = w.Write(jsondata)
+
+	return nil
+}

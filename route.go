@@ -73,6 +73,10 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println("POST /getSentiTask")
 		respond.GetSentiTaskById(Database, w, r)
 		return
+	case "/getSentiValidation":
+		log.Println("POST /getSentiValidation")
+		respond.GetSentiValidation(Database, w, r)
+		return
 	case "/saveAnswer":
 		log.Println("POST /SaveAnswer")
 		respond.SaveAnswer(Database, w, r)
@@ -100,6 +104,10 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/checkIsValidated":
 		log.Println("POST /CheckIsValidated")
 		respond.CheckIsValidated(Database, w, r)
+		return
+	case "/discardSentiAnswer":
+		log.Println("POST /discardSentiAnswer")
+		respond.DiscardSentiAnswer(Database, w, r)
 		return
 	case "/getDecision":
 		log.Println("POST /getRandomDecision")
