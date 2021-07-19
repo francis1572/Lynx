@@ -725,7 +725,7 @@ func GetSentiTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r
 		return err
 	}
 	// get tasks by articles
-	tasks, err := service.GetSentiTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
+	tasks, err := service.GetSentiTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"], "isAnswered": false})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
