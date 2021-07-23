@@ -85,6 +85,10 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println("POST /GetValidation")
 		respond.GetValidation(Database, w, r)
 		return
+	case "/getSentiAspects":
+		log.Println("POST /getSentiAspects")
+		respond.GetSentiAspects(Database, w, r)
+		return
 	case "/postSentiValidation":
 		log.Println("POST /PostSentiValidation")
 		respond.PostSentiValidation(Database, w, r)

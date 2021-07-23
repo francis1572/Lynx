@@ -725,7 +725,7 @@ func GetSentiTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r
 		return err
 	}
 	// get tasks by articles
-	tasks, err := service.GetSentiTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
+	tasks, err := service.GetSentiTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"], "isAnswered": false})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -976,11 +976,31 @@ func GetSentiValidation(database *mongo.Database, w http.ResponseWriter, r *http
 	response.TaskTitle = task.TaskTitle
 	response.Context = task.Context
 	response.AspectPool = task.AspectPool
+
 	if len(aspects) != 0 {
 		response.IsAnswered = true
 	}
 
 	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+func GetSentiAspects(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var queryInfo models.SentiTask
+	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println(models.SentiAspect{TaskId: queryInfo.TaskId})
+	aspects, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: queryInfo.TaskId})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println(aspects)
+
+	jsondata, _ := json.Marshal(aspects)
 	_, _ = w.Write(jsondata)
 	return nil
 }
