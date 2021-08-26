@@ -1,4 +1,5 @@
 package viewModels
+
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -12,28 +13,28 @@ type TaskListModel struct {
 }
 
 type SentiTaskListModel struct {
-	TaskId     string   `bson:"taskId" json:"taskId"`
-	TaskTitle  string   `bson:"taskTitle" json:"taskTitle"`
-	Context    string   `bson:"context" json:"context"`
-	AspectPool []string `bson:"aspectPool" json:"aspectPool"`
-	IsAnswered bool     `bson:"isAnswered" json:"isAnswered"`
+	TaskId     primitive.ObjectID `bson:"_id" json:"_id"`
+	TaskTitle  string             `bson:"taskTitle" json:"taskTitle"`
+	Context    string             `bson:"context" json:"context"`
+	AspectPool []string           `bson:"aspectPool" json:"aspectPool"`
+	IsAnswered bool               `bson:"isAnswered" json:"isAnswered"`
 }
 type TasksViewModel struct {
-	ArticleId    string          `bson:"articleId" json:"articleId"`
-	ArticleTitle string          `bson:"articleTitle" json:"articleTitle"`
-	TaskType     string          `bson:"taskType" json:"taskType"`
-	TaskList     []TaskListModel `bson:"taskList" json:"taskList"`
+	ArticleId    primitive.ObjectID `bson:"articleId" json:"articleId"`
+	ArticleTitle string             `bson:"articleTitle" json:"articleTitle"`
+	TaskType     string             `bson:"taskType" json:"taskType"`
+	TaskList     []TaskListModel    `bson:"taskList" json:"taskList"`
 }
 
 type SentiTasksViewModel struct {
-	ArticleId    string               `bson:"articleId" json:"articleId"`
+	ArticleId    primitive.ObjectID   `bson:"articleId" json:"articleId"`
 	ArticleTitle string               `bson:"articleTitle" json:"articleTitle"`
 	TaskType     string               `bson:"taskType" json:"taskType"`
 	TaskList     []SentiTaskListModel `bson:"taskList" json:"taskList"`
 }
 
 type QAPairModel struct {
-	Question  string `bson:"question" json:"question"`
+	Question string `bson:"question" json:"question"`
 }
 
 type ValidationQAPairModel struct {
@@ -55,29 +56,31 @@ type TaskViewModel struct {
 }
 
 type SentiTaskViewModel struct {
-	TaskId     string   `bson:"taskId" json:"taskId"`
-	TaskType   string   `bson:"taskType" json:"taskType"`
-	TaskTitle  string   `bson:"taskTitle" json:"taskTitle"`
-	Context    string   `bson:"context" json:"context"`
-	AspectPool []string `bson:"aspectPool" json:"aspectPool"`
-	IsAnswered bool     `bson:"isAnswered" json:"isAnswered"`
+	TaskId     primitive.ObjectID `bson:"taskId" json:"taskId"`
+	ArticleId  primitive.ObjectID `bson:"articleId" json:"articleId"`
+	ProjectId  primitive.ObjectID `bson:"projectId" json:"projectId"`
+	TaskType   string             `bson:"taskType" json:"taskType"`
+	TaskTitle  string             `bson:"taskTitle" json:"taskTitle"`
+	Context    string             `bson:"context" json:"context"`
+	AspectPool []string           `bson:"aspectPool" json:"aspectPool"`
+	IsAnswered bool               `bson:"isAnswered" json:"isAnswered"`
 }
 
 type ValidationDataViewModel struct {
-	UserId 			 		 string `bson:"userId" json:"userId"`
-	OriginalId 		   string `bson:"originalId" json:"original"`
+	UserId           string `bson:"userId" json:"userId"`
+	OriginalId       string `bson:"originalId" json:"original"`
 	ValidationAnswer string `bson:"validationAnswer" json:"validationAnswer"`
-	StartIdx 		 		 int `bson:"startIdx" json:"startIdx"`
+	StartIdx         int    `bson:"startIdx" json:"startIdx"`
 }
 
 type DecisionDataViewModel struct {
 	ValidationStatusId  primitive.ObjectID `bson:"validationStatusId" json:"validationStatusId"`
-	OriginalId 			 		primitive.ObjectID `bson:"originalId,omitempty" json:"original"`
-	ValidationId 		 		primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
-	Question 				 		string `bson:"question" json:"question"`
-	OriginalAnswer 	 		string `bson:"originalAnswer" json:"originalAnswer"`
-	OriginalStartIdx 		int `bson:"originalStartIdx" json:"originalStart"`
-	ValidationAnswer 		string `bson:"validationAnswer" json:"validationAnswer"`
-	ValidationStartIdx  int `bson:"validationStartIdx" json:"validationStartIdx"`
-	OriginalTaskContext string `bson:"originalTaskContext" json:"originalTaskContext"`
+	OriginalId          primitive.ObjectID `bson:"originalId,omitempty" json:"original"`
+	ValidationId        primitive.ObjectID `bson:"validationId,omitempty" json:"validationId"`
+	Question            string             `bson:"question" json:"question"`
+	OriginalAnswer      string             `bson:"originalAnswer" json:"originalAnswer"`
+	OriginalStartIdx    int                `bson:"originalStartIdx" json:"originalStart"`
+	ValidationAnswer    string             `bson:"validationAnswer" json:"validationAnswer"`
+	ValidationStartIdx  int                `bson:"validationStartIdx" json:"validationStartIdx"`
+	OriginalTaskContext string             `bson:"originalTaskContext" json:"originalTaskContext"`
 }

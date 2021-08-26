@@ -2,15 +2,16 @@ package models
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 //User structure
 type Article struct {
-	ArticleId    string `bson:"articleId" json:"articleId"`
-	ProjectId    int    `bson:"projectId" json:"projectId"`
-	ArticleTitle string `bson:"articleTitle" json:"articleTitle"`
-	TotalTasks   int    `bson:"totalTasks" json:"totalTasks"`
-	Answered     int    `bson:"answered" json:"answered"`
+	ArticleId    primitive.ObjectID `bson:"_id" json:"_id"`
+	ProjectId    primitive.ObjectID `bson:"projectId" json:"projectId"`
+	ArticleTitle string             `bson:"articleTitle" json:"articleTitle"`
+	TotalTasks   int                `bson:"totalTasks" json:"totalTasks"`
+	Answered     int                `bson:"answered" json:"answered"`
 }
 
 //TableName return name of database table
@@ -19,7 +20,7 @@ func (a *Article) TableName() string {
 }
 
 func (a *Article) ToQueryBson() bson.M {
-	if a.ArticleId != "" {
+	if a.ArticleId.Hex() != "000000000000000000000000" {
 		queryObject := bson.M{
 			"articleId": a.ArticleId,
 		}
@@ -34,12 +35,13 @@ func (a *Article) ToQueryBson() bson.M {
 }
 
 type SentiArticle struct {
-	ArticleId    string `bson:"articleId" json:"articleId"`
-	ProjectId    int    `bson:"projectId" json:"projectId"`
-	ArticleTitle string `bson:"articleTitle" json:"articleTitle"`
-	TotalTasks   int    `bson:"totalTasks" json:"totalTasks"`
-	IsAnswered   bool   `bson:"isAnswered" json:"isAnswered"`
-	IsValidated  bool   `bson:"isValidated " json:"isValidated"`
+	ArticleId    primitive.ObjectID `bson:"_id" json:"_id"`
+	ProjectId    primitive.ObjectID `bson:"projectId" json:"projectId"`
+	TaskType     string             `bson:"taskType" json:"taskType"`
+	ArticleTitle string             `bson:"articleTitle" json:"articleTitle"`
+	TotalTasks   int                `bson:"totalTasks" json:"totalTasks"`
+	IsAnswered   bool               `bson:"isAnswered" json:"isAnswered"`
+	IsValidated  bool               `bson:"isValidated " json:"isValidated"`
 }
 
 //TableName return name of database table
@@ -48,7 +50,7 @@ func (a *SentiArticle) TableName() string {
 }
 
 func (a *SentiArticle) ToQueryBson() bson.M {
-	if a.ArticleId != "" {
+	if a.ArticleId.Hex() != "000000000000000000000000" {
 		queryObject := bson.M{
 			"articleId": a.ArticleId,
 		}

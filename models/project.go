@@ -2,13 +2,15 @@ package models
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Project struct {
-	ProjectId   int    `bson:"projectId" json:"projectId"`
-	ProjectName string `bson:"projectName" json:"projectName"`
-	ProjectType string `bson:"projectType" json:"projectType"`
-	LabelInfo   string `bson:"labelInfo" json:"labelInfo"`
+	ProjectId   primitive.ObjectID `bson:"_id" json:"_id"`
+	ProjectName string             `bson:"name" json:"name"`
+	ProjectType string             `bson:"type" json:"type"`
+	Rule        string             `bson:"rule" json:"rule"`
+	ManagerId   string             `bson:"managerId" json:"managerId"`
 }
 
 func (p *Project) TableName() string {
@@ -17,9 +19,9 @@ func (p *Project) TableName() string {
 
 func (p *Project) ToQueryBson() bson.M {
 	var queryObject bson.M
-	if p.ProjectId != -1 {
+	if p.ProjectId.Hex() != "000000000000000000000000" {
 		queryObject = bson.M{
-			"projectId": p.ProjectId,
+			"_id": p.ProjectId,
 		}
 	} else {
 		queryObject = bson.M{
