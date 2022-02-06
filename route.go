@@ -44,24 +44,24 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/saveAuth":
 		respond.SaveAuth(Database, w, r)
 		return
-	case "/saveProject":
-		respond.SaveProject(Database, w, r)
-		return
-	case "/projects":
-		respond.GetProjects(Database, w, r)
-		return
-	case "/articles":
-		respond.GetArticles(Database, w, r)
-		return
+	// case "/saveProject":
+	// 	respond.SaveProject(Database, w, r)
+	// 	return
+	// case "/projects":
+	// 	respond.GetProjects(Database, w, r)
+	// 	return
+	// case "/articles":
+	// 	respond.GetArticles(Database, w, r)
+	// 	return
 	case "/sentiArticles":
 		respond.GetSentiArticles(Database, w, r)
 		return
-	case "/saveArticles":
-		respond.SaveArticles(Database, w, r)
-		return
-	case "/tasks":
-		respond.GetTasksByArticleId(Database, w, r)
-		return
+	// case "/saveArticles":
+	// 	respond.SaveArticles(Database, w, r)
+	// 	return
+	// case "/tasks":
+	// 	respond.GetTasksByArticleId(Database, w, r)
+	// 	return
 	case "/sentiTasks":
 		respond.GetSentiTasksByArticleId(Database, w, r)
 		return

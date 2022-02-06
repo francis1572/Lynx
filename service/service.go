@@ -33,37 +33,37 @@ func GetAuthByProjectId(db *mongo.Database, auth models.Auth) ([]models.Auth, er
 	return serviceResult, nil
 }
 
-func GetProjectsByAuth(db *mongo.Database, auth models.Auth) ([]models.Project, error) {
-	collection := db.Collection(auth.TableName())
-	var authList = models.Auths{}
-	cur, err := collection.Find(context.Background(), auth.ToQueryBson())
-	log.Println("cur", cur)
-	log.Println("auth", auth.ToQueryBson())
-	if err != nil {
-		log.Println("Find Project Error", err)
-		return nil, err
-	}
-	for cur.Next(context.Background()) {
-		result := models.Auth{}
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Println("Decode Project Error", err)
-			return nil, err
-		}
-		authList = append(authList, result)
-	}
-	var projectIds = authList.SelectProjectIdList()
-	var serviceResult = []models.Project{}
-	for _, projectId := range projectIds {
-		project, err := GetProjectByProjectId(db, models.Project{ProjectId: projectId})
-		if err != nil {
-			return nil, err
-		}
-		serviceResult = append(serviceResult, *project)
-	}
+// func GetProjectsByAuth(db *mongo.Database, auth models.Auth) ([]models.Project, error) {
+// 	collection := db.Collection(auth.TableName())
+// 	var authList = models.Auths{}
+// 	cur, err := collection.Find(context.Background(), auth.ToQueryBson())
+// 	log.Println("cur", cur)
+// 	log.Println("auth", auth.ToQueryBson())
+// 	if err != nil {
+// 		log.Println("Find Project Error", err)
+// 		return nil, err
+// 	}
+// 	for cur.Next(context.Background()) {
+// 		result := models.Auth{}
+// 		err := cur.Decode(&result)
+// 		if err != nil {
+// 			log.Println("Decode Project Error", err)
+// 			return nil, err
+// 		}
+// 		authList = append(authList, result)
+// 	}
+// 	var projectIds = authList.SelectProjectIdList()
+// 	var serviceResult = []models.Project{}
+// 	for _, projectId := range projectIds {
+// 		project, err := GetProjectByProjectId(db, models.Project{ProjectId: projectId})
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		serviceResult = append(serviceResult, *project)
+// 	}
 
-	return serviceResult, nil
-}
+// 	return serviceResult, nil
+// }
 
 func SaveAuth(db *mongo.Database, auth models.Auth) (*mongo.InsertOneResult, error) {
 	AuthCollection := db.Collection(auth.TableName())
@@ -150,9 +150,10 @@ func SaveTasks(db *mongo.Database, tasks []models.MRCTask) (*mongo.InsertManyRes
 // }
 
 func GetProjectByProjectId(db *mongo.Database, project models.Project) (*models.Project, error) {
-	collection := db.Collection("Project")
+	collection := db.Collection("projects")
 	var serviceResult = models.Project{}
-	log.Println(project)
+	// log.Println(project.ToQueryBson())
+	// log.Println(collection)
 	cur := collection.FindOne(context.Background(), project.ToQueryBson())
 	// if no project then return nil
 	if cur.Err() != nil {
@@ -494,6 +495,8 @@ func GetSentiArticleByArticleId(db *mongo.Database, queryBson bson.M) (*models.A
 func GetSentiTasksByArticleId(db *mongo.Database, queryBson bson.M) ([]models.SentiTask, error) {
 	TaskCollection := db.Collection("SentiTask")
 	var tasks []models.SentiTask
+	// cur, err := TaskCollection.Find(context.Background(), bson.D{{}})
+	log.Println("queryBson", queryBson)
 	cur, err := TaskCollection.Find(context.Background(), queryBson)
 	if err != nil {
 		log.Println("Find tasks Error", err)
@@ -533,10 +536,10 @@ func GetAspectByTaskId(db *mongo.Database, task models.SentiAspect) ([]*models.S
 	return aspects, nil
 }
 
-func GetSentiTaskById(db *mongo.Database, taskModel models.SentiTask) (*models.SentiTask, error) {
+func GetSentiTaskById(db *mongo.Database, taskModel bson.M) (*models.SentiTask, error) {
 	TaskCollection := db.Collection("SentiTask")
 	var task models.SentiTask
-	result := TaskCollection.FindOne(context.Background(), taskModel.ToQueryBson())
+	result := TaskCollection.FindOne(context.Background(), taskModel)
 	err := result.Decode(&task)
 	if err != nil {
 		log.Println("Decode task Error", err)
@@ -584,7 +587,7 @@ func SaveSentiAnswer(db *mongo.Database, answer models.SentiAnswer) (*mongo.Inse
 	}
 
 	TaskCollection := db.Collection("SentiTask")
-	filter := bson.M{"taskId": answer.Aspect[0].TaskId}
+	filter := bson.M{"_id": answer.Aspect[0].TaskId}
 	update := bson.M{"$set": bson.M{"isAnswered": true}}
 	_, err = TaskCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -664,8 +667,9 @@ func SaveFinalAnswer(db *mongo.Database, answer models.SentiAnswer) (*mongo.Inse
 		return nil, err
 	}
 
-	filter := bson.M{"taskId": answer.Task.TaskId}
+	filter := bson.M{"_id": answer.Task.TaskId}
 	update := bson.M{"$set": bson.M{"isValidate": true}}
+	// log.Println("filter:", answer, filter)
 	_, err = TaskCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		log.Println("Insert comment Error", err)
@@ -686,7 +690,7 @@ func CheckIsAnswered(db *mongo.Database, query models.SentiTask) (bool, error) {
 		result := models.SentiTask{}
 		err := cur.Decode(&result)
 		if err != nil {
-			log.Println("Decode tasks Error", err)
+			log.Println("Decode tasks Error when check isAnswer", err)
 			return false, err
 		}
 		if result.IsAnswered == false {
@@ -699,7 +703,7 @@ func CheckIsAnswered(db *mongo.Database, query models.SentiTask) (bool, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		filter := bson.M{"articleId": query.ArticleId}
+		filter := bson.M{"_id": query.ArticleId}
 		update := bson.M{"$set": bson.M{"isAnswered": true}}
 		_, err := ArticleCollection.UpdateOne(ctx, filter, update)
 		if err != nil {
@@ -710,7 +714,7 @@ func CheckIsAnswered(db *mongo.Database, query models.SentiTask) (bool, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		filter := bson.M{"articleId": query.ArticleId}
+		filter := bson.M{"_id": query.ArticleId}
 		update := bson.M{"$set": bson.M{"isAnswered": false}}
 		_, err := ArticleCollection.UpdateOne(ctx, filter, update)
 		if err != nil {
@@ -746,7 +750,7 @@ func CheckIsValidated(db *mongo.Database, query models.SentiTask) (bool, error) 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		filter := bson.M{"articleId": query.ArticleId}
+		filter := bson.M{"_id": query.ArticleId}
 		update := bson.M{"$set": bson.M{"isValidated": true}}
 		_, err := ArticleCollection.UpdateOne(ctx, filter, update)
 		if err != nil {
@@ -760,8 +764,10 @@ func CheckIsValidated(db *mongo.Database, query models.SentiTask) (bool, error) 
 func DiscardSentiAnswer(db *mongo.Database, query models.SentiTask) (bool, error) {
 	TaskCollection := db.Collection("SentiTask")
 	ArticleCollection := db.Collection("SentiArticles")
+	AspectCollection := db.Collection("SentiAspect")
+	SentimentCollection := db.Collection("SentiSentiment")
 	result := models.SentiTask{}
-	cur := TaskCollection.FindOne(context.Background(), bson.M{"taskId": query.TaskId})
+	cur := TaskCollection.FindOne(context.Background(), bson.M{"_id": query.TaskId})
 	err := cur.Decode(&result)
 	if err != nil {
 		log.Println("Find tasks Error", err)
@@ -770,7 +776,7 @@ func DiscardSentiAnswer(db *mongo.Database, query models.SentiTask) (bool, error
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"taskId": query.TaskId}
+	filter := bson.M{"_id": query.TaskId}
 	update := bson.M{"$set": bson.M{"isAnswered": false}}
 	_, err = TaskCollection.UpdateOne(ctx, filter, update)
 
@@ -779,11 +785,28 @@ func DiscardSentiAnswer(db *mongo.Database, query models.SentiTask) (bool, error
 		return false, err
 	}
 
-	filter = bson.M{"articleId": result.ArticleId}
+	filter = bson.M{"_id": result.ArticleId}
 	update = bson.M{"$set": bson.M{"isAnswered": false}}
 	_, err = ArticleCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		log.Println("Insert comment Error", err)
+		return false, err
+	}
+
+	//刪除掉被deny的錯誤標注內容
+	filter = bson.M{"taskId": query.TaskId}
+	_, err = AspectCollection.DeleteMany(ctx, filter)
+
+	if err != nil {
+		log.Println("Delete Aspect Error", err)
+		return false, err
+	}
+
+	filter = bson.M{"taskId": query.TaskId}
+	_, err = SentimentCollection.DeleteMany(ctx, filter)
+
+	if err != nil {
+		log.Println("Delete Sentiment Error", err)
 		return false, err
 	}
 	// log.Println("isCompleted : ", isCompleted)

@@ -2,14 +2,17 @@ package viewModels
 
 import (
 	"Lynx/models"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProjectViewModel struct {
-	ProjectId   int              `bson:"projectId" json:"projectId"`
-	ProjectName string           `bson:"projectName" json:"projectName"`
-	ProjectType string           `bson:"projectType" json:"projectType"`
-	LabelInfo   string           `bson:"labelInfo" json:"labelInfo"`
-	ArticleList []models.Article `bson:"articleList" json:"articleList"`
+	ProjectId   primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	ProjectName string             `bson:"name" json:"name"`
+	ProjectType string             `bson:"type" json:"type"`
+	Rule        string             `bson:"rule" json:"rule"`
+	ManagerId   string             `bson:"managerId" json:"managerId"`
+	ArticleList []models.Article   `bson:"articleList" json:"articleList"`
 }
 
 type ProjectManageViewModel struct {

@@ -14,7 +14,7 @@ var client *mongo.Client
 
 func DBConnection() {
 	var err error
-	client, err = mongo.NewClient(options.Client().ApplyURI("mongodb+srv://root:root@cluster0.nmwxj.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"))
+	client, err = mongo.NewClient(options.Client().ApplyURI("mongodb+srv://bilabeler:bilab1234@beta.jfad2.mongodb.net/label-lab?retryWrites=true&w=majority"))
 	if err != nil {
 		log.Fatal(err)
 	}

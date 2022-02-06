@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	Database = client.Database("labelLabDB")
+	Database = client.Database("label-lab")
 	mux := &RouteMux{}
 	log.Println("Server Launched on port 9090")
 	handler := cors.Default().Handler(mux)

@@ -1,19 +1,15 @@
 package respond
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"Lynx/models"
 	"Lynx/service"
 	"Lynx/viewModels"
 
-	uuid "github.com/nu7hatch/gouuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -128,104 +124,104 @@ func SaveAuth(database *mongo.Database, w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
-func SaveProject(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var addProjModel = viewModels.AddProjectViewModel{}
-	err := json.NewDecoder(r.Body).Decode(&addProjModel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
+// func SaveProject(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+// 	var addProjModel = viewModels.AddProjectViewModel{}
+// 	err := json.NewDecoder(r.Body).Decode(&addProjModel)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
 
-	// assign new projectId to each member's authentication
-	currentId, err := service.GetProjectCount(database)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
+// 	// assign new projectId to each member's authentication
+// 	currentId, err := service.GetProjectCount(database)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
 
-	// check if csv format decode is correct first
-	articles, tasks, err := convertToArticlesAndTasks(addProjModel.CsvFile, int(currentId))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
+// 	// check if csv format decode is correct first
+// 	articles, tasks, err := convertToArticlesAndTasks(addProjModel.CsvFile, int(currentId))
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
 
-	// then adding objects into db
-	addProjModel.Project.ProjectId = int(currentId)
-	projectResult, err := service.SaveProject(database, addProjModel.Project)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	for i := range addProjModel.Members {
-		addProjModel.Members[i].ProjectId = int(currentId)
-	}
-	log.Println("addProj members", addProjModel.Members)
-	_, err = service.SaveAuths(database, addProjModel.Members)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	_, err = service.SaveArticles(database, articles)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	_, err = service.SaveTasks(database, tasks)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	var response = models.Success{
-		Success: true,
-		Message: projectResult.InsertedID.(primitive.ObjectID).Hex(),
-	}
-	jsondata, _ := json.Marshal(response)
-	_, _ = w.Write(jsondata)
-	return nil
-}
+// 	// then adding objects into db
+// 	addProjModel.Project.ProjectId = int(currentId)
+// 	projectResult, err := service.SaveProject(database, addProjModel.Project)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	for i := range addProjModel.Members {
+// 		addProjModel.Members[i].ProjectId = int(currentId)
+// 	}
+// 	log.Println("addProj members", addProjModel.Members)
+// 	_, err = service.SaveAuths(database, addProjModel.Members)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	_, err = service.SaveArticles(database, articles)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	_, err = service.SaveTasks(database, tasks)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	var response = models.Success{
+// 		Success: true,
+// 		Message: projectResult.InsertedID.(primitive.ObjectID).Hex(),
+// 	}
+// 	jsondata, _ := json.Marshal(response)
+// 	_, _ = w.Write(jsondata)
+// 	return nil
+// }
 
 // private func for decode articles and Tasks.
-func convertToArticlesAndTasks(csvFile [][]string, currentId int) ([]models.Article, []models.MRCTask, error) {
-	var articles []models.Article
-	var tasks []models.MRCTask
-	articleSets := make(map[string]int)
-	var ai int = -1 //point index of articles
-	for _, pair := range csvFile {
-		var contexts = pair[0]
-		var indices = strings.Split(pair[1], "-")
-		var articleId = "articleId" + indices[0]
-		var taskId = "taskId" + pair[1]
-		// basic check for the csv format
-		if len(pair) != 2 || len(indices) != 2 {
-			log.Println("錯誤的CSV檔案格式")
-			return nil, nil, errors.New("錯誤的CSV檔案格式")
-		}
-		// check if the articles already exist else create one
-		if _, ok := articleSets[articleId]; ok {
-			articles[ai].TotalTasks += 1
-		} else {
-			articleSets[articleId] = 1
-			var article = models.Article{
-				ArticleId:    articleId,
-				ProjectId:    currentId,
-				ArticleTitle: contexts,
-				TotalTasks:   1,
-			}
-			articles = append(articles, article)
-			ai += 1
-		}
-		var task = models.MRCTask{
-			TaskId:    taskId,
-			ArticleId: articleId,
-			TaskType:  "MRC",
-			TaskTitle: contexts,
-			Context:   contexts,
-		}
-		tasks = append(tasks, task)
-	}
-	return articles, tasks, nil
-}
+// func convertToArticlesAndTasks(csvFile [][]string, currentId int) ([]models.Article, []models.MRCTask, error) {
+// 	var articles []models.Article
+// 	var tasks []models.MRCTask
+// 	articleSets := make(map[string]int)
+// 	var ai int = -1 //point index of articles
+// 	for _, pair := range csvFile {
+// 		var contexts = pair[0]
+// 		var indices = strings.Split(pair[1], "-")
+// 		var articleId = "articleId" + indices[0]
+// 		var taskId = "taskId" + pair[1]
+// 		// basic check for the csv format
+// 		if len(pair) != 2 || len(indices) != 2 {
+// 			log.Println("錯誤的CSV檔案格式")
+// 			return nil, nil, errors.New("錯誤的CSV檔案格式")
+// 		}
+// 		// check if the articles already exist else create one
+// 		if _, ok := articleSets[articleId]; ok {
+// 			articles[ai].TotalTasks += 1
+// 		} else {
+// 			articleSets[articleId] = 1
+// 			var article = models.Article{
+// 				ArticleId:    articleId,
+// 				ProjectId:    currentId,
+// 				ArticleTitle: contexts,
+// 				TotalTasks:   1,
+// 			}
+// 			articles = append(articles, article)
+// 			ai += 1
+// 		}
+// 		var task = models.MRCTask{
+// 			TaskId:    taskId,
+// 			ArticleId: articleId,
+// 			TaskType:  "MRC",
+// 			TaskTitle: contexts,
+// 			Context:   contexts,
+// 		}
+// 		tasks = append(tasks, task)
+// 	}
+// 	return articles, tasks, nil
+// }
 
 func GetUsers(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	users, err := service.GetUsers(database)
@@ -238,161 +234,161 @@ func GetUsers(database *mongo.Database, w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
-func GetProjects(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var queryInfo map[string]string
-	err := json.NewDecoder(r.Body).Decode(&queryInfo)
-	var userId = queryInfo["userId"]
-	var statusCode = queryInfo["statusCode"]
-	var queryAuth = models.Auth{UserId: userId, StatusCode: statusCode}
-	log.Println(userId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
+// func GetProjects(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+// 	var queryInfo map[string]string
+// 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+// 	var userId = queryInfo["userId"]
+// 	var statusCode = queryInfo["statusCode"]
+// 	var queryAuth = models.Auth{UserId: userId, StatusCode: statusCode}
+// 	log.Println(userId)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
 
-	projects, err := service.GetProjectsByAuth(database, queryAuth)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	jsondata, _ := json.Marshal(projects)
-	w.Write(jsondata)
-	return nil
-}
+// 	projects, err := service.GetProjectsByAuth(database, queryAuth)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	jsondata, _ := json.Marshal(projects)
+// 	w.Write(jsondata)
+// 	return nil
+// }
 
-func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var queryInfo map[string]string
-	var result viewModels.ProjectViewModel
-	var articles []models.Article
-	err := json.NewDecoder(r.Body).Decode(&queryInfo)
-	var userId = queryInfo["userId"]
-	log.Println(userId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	projectId, _ := strconv.Atoi(queryInfo["projectId"])
-	var queryProject = models.Project{ProjectId: projectId}
-	projectResult, err := service.GetProjectByProjectId(database, queryProject)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	articles, err = service.GetArticlesByProjectId(database, projectId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	result.ProjectId = projectResult.ProjectId
-	result.ProjectName = projectResult.ProjectName
-	result.ProjectType = projectResult.ProjectType
-	result.LabelInfo = projectResult.LabelInfo
-	result.ArticleList = articles
-	// [PENDING] Further information for articles
-	// for i, article := range articles {
-	// 	// get how many tasks that each article has
-	// 	tasks, err := service.GetTasksByArticleId(database, article.ToQueryBson())
-	// 	if err != nil {
-	// 		http.Error(w, err.Error(), http.StatusBadRequest)
-	// 		return err
-	// 	}
-	// 	articles[i].TotalTasks = len(tasks)
-	// 	for _, task := range tasks {
-	// 		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: userId, TaskId: task.TaskId})
-	// 		if err != nil {
-	// 			http.Error(w, err.Error(), http.StatusBadRequest)
-	// 			return err
-	// 		}
-	// 		// get how many tasks user has answered
-	// 		articles[i].Answered = len(answers)
-	// 	}
-	// }
-	jsondata, _ := json.Marshal(result)
-	w.Write(jsondata)
-	return nil
-}
+// func GetArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+// 	var queryInfo map[string]string
+// 	var result viewModels.ProjectViewModel
+// 	var articles []models.Article
+// 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+// 	var userId = queryInfo["userId"]
+// 	log.Println(userId)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	projectId, _ := strconv.Atoi(queryInfo["projectId"])
+// 	var queryProject = models.Project{ProjectId: projectId}
+// 	projectResult, err := service.GetProjectByProjectId(database, queryProject)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	articles, err = service.GetArticlesByProjectId(database, projectId)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	result.ProjectId = projectResult.ProjectId
+// 	result.ProjectName = projectResult.ProjectName
+// 	result.ProjectType = projectResult.ProjectType
+// 	result.LabelInfo = projectResult.LabelInfo
+// 	result.ArticleList = articles
+// 	// [PENDING] Further information for articles
+// 	// for i, article := range articles {
+// 	// 	// get how many tasks that each article has
+// 	// 	tasks, err := service.GetTasksByArticleId(database, article.ToQueryBson())
+// 	// 	if err != nil {
+// 	// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 	// 		return err
+// 	// 	}
+// 	// 	articles[i].TotalTasks = len(tasks)
+// 	// 	for _, task := range tasks {
+// 	// 		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: userId, TaskId: task.TaskId})
+// 	// 		if err != nil {
+// 	// 			http.Error(w, err.Error(), http.StatusBadRequest)
+// 	// 			return err
+// 	// 		}
+// 	// 		// get how many tasks user has answered
+// 	// 		articles[i].Answered = len(answers)
+// 	// 	}
+// 	// }
+// 	jsondata, _ := json.Marshal(result)
+// 	w.Write(jsondata)
+// 	return nil
+// }
 
-func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var queryInfo map[string]string
-	var result viewModels.TasksViewModel
-	// decode request condition to queryInfo
-	err := json.NewDecoder(r.Body).Decode(&queryInfo)
-	log.Println("GetTasksByArticleId queryInfo:", queryInfo)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	// get tasks by articles
-	tasks, err := service.GetTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
+// func GetTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+// 	var queryInfo models.SentiArticle
+// 	var result viewModels.TasksViewModel
+// 	// decode request condition to queryInfo
+// 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
+// 	log.Println("GetTasksByArticleId queryInfo:", queryInfo)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	// get tasks by articles
+// 	tasks, err := service.GetTasksByArticleId(database, bson.M{"articleId": queryInfo.ArticleId})
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
 
-	// get ArticleInfo
-	result.ArticleId = queryInfo["ArticleId"]
-	result.TaskType = queryInfo["TaskType"]
-	articleResult, err := service.GetArticleByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	result.ArticleTitle = articleResult.ArticleTitle
+// 	// get ArticleInfo
+// 	result.ArticleId = queryInfo.ArticleId
+// 	result.TaskType = queryInfo.TaskType
+// 	articleResult, err := service.GetArticleByArticleId(database, bson.M{"articleId": queryInfo.ArticleId})
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	result.ArticleTitle = articleResult.ArticleTitle
 
-	// get tasksInfo
-	for _, task := range tasks {
-		var t = viewModels.TaskListModel{
-			TaskId:    task.TaskId,
-			TaskTitle: task.TaskTitle,
-			Context:   task.Context,
-		}
-		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: queryInfo["userId"], ArticleId: queryInfo["articleId"], TaskId: task.TaskId})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return err
-		}
-		t.Answered = len(answers)
-		// if user has answers the question
-		if len(answers) != 0 {
-			t.IsAnswered = true
-		}
-		result.TaskList = append(result.TaskList, t)
-	}
-	jsondata, _ := json.Marshal(result)
-	w.Write(jsondata)
-	return nil
-}
+// 	// get tasksInfo
+// 	for _, task := range tasks {
+// 		var t = viewModels.TaskListModel{
+// 			TaskId:    task.TaskId,
+// 			TaskTitle: task.TaskTitle,
+// 			Context:   task.Context,
+// 		}
+// 		answers, err := service.GetAnswers(database, models.MRCAnswer{UserId: queryInfo.UserId, ArticleId: queryInfo["articleId"], TaskId: task.TaskId})
+// 		if err != nil {
+// 			http.Error(w, err.Error(), http.StatusBadRequest)
+// 			return err
+// 		}
+// 		t.Answered = len(answers)
+// 		// if user has answers the question
+// 		if len(answers) != 0 {
+// 			t.IsAnswered = true
+// 		}
+// 		result.TaskList = append(result.TaskList, t)
+// 	}
+// 	jsondata, _ := json.Marshal(result)
+// 	w.Write(jsondata)
+// 	return nil
+// }
 
 //[TODO] update MRCTask for answered + 1
-func SaveArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	collection := database.Collection("Articles")
-	var articles []models.Article
-	err := json.NewDecoder(r.Body).Decode(&articles)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
-	}
-	for i, _ := range articles {
-		articleId, _ := uuid.NewV4()
-		articles[i].ArticleId = "articleId" + articleId.String()
-	}
-	log.Println(articles)
+// func SaveArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+// 	collection := database.Collection("Articles")
+// 	var articles []models.Article
+// 	err := json.NewDecoder(r.Body).Decode(&articles)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return err
+// 	}
+// 	for i, _ := range articles {
+// 		articleId, _ := uuid.NewV4()
+// 		articles[i].ArticleId = "articleId" + articleId.String()
+// 	}
+// 	log.Println(articles)
 
-	// to insert into db, need to convert struct to interface{}
-	docs := make([]interface{}, len(articles))
-	for i, u := range articles {
-		docs[i] = u
-	}
-	articleResult, err := collection.InsertMany(context.Background(), docs)
-	if err != nil {
-		log.Fatal(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-	log.Printf("Inserted %v documents into articles collection!\n", len(articleResult.InsertedIDs))
-	jsondata, _ := json.Marshal(models.InsertSuccess)
-	_, _ = w.Write(jsondata)
-	return nil
-}
+// 	// to insert into db, need to convert struct to interface{}
+// 	docs := make([]interface{}, len(articles))
+// 	for i, u := range articles {
+// 		docs[i] = u
+// 	}
+// 	articleResult, err := collection.InsertMany(context.Background(), docs)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 	}
+// 	log.Printf("Inserted %v documents into articles collection!\n", len(articleResult.InsertedIDs))
+// 	jsondata, _ := json.Marshal(models.InsertSuccess)
+// 	_, _ = w.Write(jsondata)
+// 	return nil
+// }
 
 func GetTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var requestBody map[string]string
@@ -677,7 +673,8 @@ func SaveDecision(database *mongo.Database, w http.ResponseWriter, r *http.Reque
 
 //================================= sentiment API =================================
 func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var queryInfo map[string]string
+	var queryInfo models.SentiArticle
+
 	var articles []models.Article
 	var result viewModels.ProjectViewModel
 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
@@ -688,7 +685,7 @@ func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	projectId, _ := strconv.Atoi(queryInfo["projectId"])
+	projectId := queryInfo.ProjectId
 
 	var queryProject = models.Project{ProjectId: projectId}
 	// log.Print(queryProject)
@@ -706,7 +703,8 @@ func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.R
 	result.ProjectId = projectResult.ProjectId
 	result.ProjectName = projectResult.ProjectName
 	result.ProjectType = projectResult.ProjectType
-	result.LabelInfo = projectResult.LabelInfo
+	result.Rule = projectResult.Rule
+	result.ManagerId = projectResult.ManagerId
 	result.ArticleList = articles
 
 	jsondata, _ := json.Marshal(result)
@@ -715,26 +713,27 @@ func GetSentiArticles(database *mongo.Database, w http.ResponseWriter, r *http.R
 }
 
 func GetSentiTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var queryInfo map[string]string
+	var queryInfo models.SentiArticle
 	var result viewModels.SentiTasksViewModel
 	// decode request condition to queryInfo
 	err := json.NewDecoder(r.Body).Decode(&queryInfo)
-	log.Println("GetSentiTasksByArticleId queryInfo:", queryInfo)
+	log.Println("GetSentiTasksByArticleId queryInfo:", bson.M{"articleId": queryInfo.ArticleId, "isAnswered": false})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
 	// get tasks by articles
-	tasks, err := service.GetSentiTasksByArticleId(database, bson.M{"articleId": queryInfo["articleId"], "isAnswered": false})
+	tasks, err := service.GetSentiTasksByArticleId(database, bson.M{"articleId": queryInfo.ArticleId, "isAnswered": false})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
+	log.Println(tasks)
 
 	// get ArticleInfo
-	result.ArticleId = queryInfo["articleId"]
-	result.TaskType = queryInfo["taskType"]
-	articleResult, err := service.GetSentiArticleByArticleId(database, bson.M{"articleId": queryInfo["articleId"]})
+	result.ArticleId = queryInfo.ArticleId
+	result.TaskType = queryInfo.TaskType
+	articleResult, err := service.GetSentiArticleByArticleId(database, bson.M{"_id": queryInfo.ArticleId})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -768,21 +767,20 @@ func GetSentiTasksByArticleId(database *mongo.Database, w http.ResponseWriter, r
 }
 
 func GetSentiTaskById(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var requestBody map[string]string
+	var requestBody models.SentiTask
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-	log.Println("GetSentiTaskById queryInfo:", requestBody)
 
-	aspects, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: requestBody["taskId"]})
+	aspects, err := service.GetAspectByTaskId(database, models.SentiAspect{TaskId: requestBody.TaskId})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
 	}
-
-	task, err := service.GetSentiTaskById(database, models.SentiTask{ArticleId: requestBody["articleId"], TaskId: requestBody["taskId"], TaskType: requestBody["taskType"]})
+	log.Println("GetSentiTaskById queryInfo:", bson.M{"_id": requestBody.TaskId, "taskType": requestBody.TaskType})
+	task, err := service.GetSentiTaskById(database, bson.M{"_id": requestBody.TaskId, "taskType": requestBody.TaskType})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
@@ -844,7 +842,7 @@ func PostSentiValidation(database *mongo.Database, w http.ResponseWriter, r *htt
 	var requestBody models.SentiAnswer
 	var finalAnswer models.SentiAnswer
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
-	// log.Println(requestBody.Aspect)
+	// log.Println(requestBody.Task)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -974,6 +972,8 @@ func GetSentiValidation(database *mongo.Database, w http.ResponseWriter, r *http
 	response.TaskId = task.TaskId
 	response.TaskType = task.TaskType
 	response.TaskTitle = task.TaskTitle
+	response.ArticleId = task.ArticleId
+	response.ProjectId = task.ProjectId
 	response.Context = task.Context
 	response.AspectPool = task.AspectPool
 
